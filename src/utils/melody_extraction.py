@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jun  3 19:51:19 2020
+Created on Wed Jul 15 01:57:14 2020
 
 @author: Austin Hsu
 """
 
+import soundfile as sf
+import numpy as np
+import scipy.fftpack
 import scipy.io.wavfile
 import scipy.signal
-import scipy.fftpack
-import numpy as np
-import torch
+import argparse
 import os
+import torch
 from src.model.Patch_CNN import KitModel
 
 def read_file(filename: str) -> (np.array, int):
     """Read files"""
+    # --- Load File ---
     sample_rate, audio = scipy.io.wavfile.read(filename)
     audio = audio.astype(np.float32)
     if len(audio.shape)==2:
@@ -25,13 +28,9 @@ def read_file(filename: str) -> (np.array, int):
         audio = scipy.signal.resample_poly(audio, 16000, sample_rate)
     return audio
 
-# -----------------------------------------------------------------------------
-#                             Feature Extraction
-# -----------------------------------------------------------------------------
-
 def STFT(x, fr, fs, Hop, h):        
-    t = np.arange(Hop, np.ceil(len(x)/Hop)*Hop, Hop)
-    N = int(fs/fr)
+    t = np.arange(Hop, np.ceil(len(x)/float(Hop))*Hop, Hop)
+    N = int(fs/float(fr))
     window_size = len(h)
     f = fs*np.linspace(0, 0.5, round(N/2), endpoint=True)
     Lh = int(np.floor(float(window_size-1) / 2))
@@ -43,10 +42,9 @@ def STFT(x, fr, fs, Hop, h):
                         int(min([round(N/2.0)-1, Lh, len(x)-ti])))
         indices = np.mod(N + tau, N) + 1                                             
         tfr[indices-1, icol] = x[ti+tau-1] * h[Lh+tau-1] \
-                                /np.linalg.norm(h[Lh+tau-1])        
-
-    tfr = scipy.fftpack.fft(tfr, n=N, axis=0)
-    tfr = abs(tfr)
+                                /np.linalg.norm(h[Lh+tau-1])           
+                            
+    tfr = abs(scipy.fftpack.fft(tfr, n=N, axis=0))  
     return tfr, f, t, N
 
 def nonlinear_func(X, g, cutoff):
@@ -104,7 +102,7 @@ def Quef2LogFreqMapping(ceps, q, fs, fc, tc, NumPerOct):
             central_freq.append(CenFreq)
         else:
             break
-    f = 1/(q + 1e-8)
+    f = 1/(q+1e-8)
     Nest = len(central_freq)
     freq_band_transformation = np.zeros((Nest-1, len(f)), dtype=np.float)
     for i in range(1, Nest-1):
@@ -117,36 +115,19 @@ def Quef2LogFreqMapping(ceps, q, fs, fc, tc, NumPerOct):
     tfrL = np.dot(freq_band_transformation, ceps)
     return tfrL, central_freq
 
-def gen_spectral_flux(S, invert=False, norm=True):
-    flux = np.diff(S)
-    first_col = np.zeros((S.shape[0],1))
-    flux = np.hstack((first_col, flux))
-    
-    if invert:
-        flux = flux * (-1.0)
-
-    flux = np.where(flux < 0, 0.0, flux)
-
-    if norm:
-        flux = (flux - np.mean(flux)) / np.std(flux)
-
-    return flux
-
 def CFP_filterbank(x, fr, fs, Hop, h, fc, tc, g, NumPerOctave):
-    NumofLayer = np.size(g)
-
     tfr, f, t, N = STFT(x, fr, fs, Hop, h)
-    tfr = np.power(tfr, g[0])
+    tfr = np.power(abs(tfr), g[0])
     tfr0 = tfr # original STFT
     ceps = np.zeros(tfr.shape)
 
-    for gc in range(1, NumofLayer):
+    for gc in range(1, 3):
         if np.remainder(gc, 2) == 1:
-            tc_idx = round(fs*tc) # 16
+            tc_idx = round(fs*tc)
             ceps = np.real(np.fft.fft(tfr, axis=0))/np.sqrt(N)
             ceps = nonlinear_func(ceps, g[gc], tc_idx)
         else:
-            fc_idx = round(fc/fr) # 40
+            fc_idx = round(fc/fr)
             tfr = np.real(np.fft.fft(ceps, axis=0))/np.sqrt(N)
             tfr = nonlinear_func(tfr, g[gc], fc_idx)
 
@@ -166,54 +147,7 @@ def CFP_filterbank(x, fr, fs, Hop, h, fc, tc, g, NumPerOctave):
     tfrLF, central_frequencies = Freq2LogFreqMapping(tfr, f, fr, fc, tc, NumPerOctave)
     tfrLQ, central_frequencies = Quef2LogFreqMapping(ceps, q, fs, fc, tc, NumPerOctave)
 
-    return tfrL0, tfrLF, tfrLQ, f, q, t, central_frequencies
-
-def cfp_feature_extraction(audio: np.array) -> np.array:
-    # --- Args ---
-    fs = 16000.0 # sampling frequency
-    Hop = 320 # hop size (in sample)
-    h3 = scipy.signal.blackmanharris(743) # window size - 2048
-    h2 = scipy.signal.blackmanharris(372) # window size - 1024
-    h1 = scipy.signal.blackmanharris(186) # window size - 512
-    fr = 2.0 # frequency resolution
-    fc = 80.0 # the frequency of the lowest pitch
-    tc = 1/1000.0 # the period of the highest pitch
-    g = np.array([0.24, 0.6, 1])
-    num_per_oct = 48 # Number of bins per octave
-        
-    # --- CFP Filterbank ---
-    tfrL01, tfrLF1, tfrLQ1, f1, q1, t1, CenFreq1 = CFP_filterbank(audio, fr, fs, Hop, h1, fc, tc, g, num_per_oct)
-    tfrL02, tfrLF2, tfrLQ2, f2, q2, t2, CenFreq2 = CFP_filterbank(audio, fr, fs, Hop, h2, fc, tc, g, num_per_oct)
-    tfrL03, tfrLF3, tfrLQ3, f3, q3, t3, CenFreq3 = CFP_filterbank(audio, fr, fs, Hop, h3, fc, tc, g, num_per_oct)
-    
-    return tfrL01, tfrLF1, tfrLQ1, tfrL02, tfrLF2, tfrLQ2, tfrL03, tfrLF3, tfrLQ3
-
-def full_feature_extraction(
-        tfrL01, tfrLF1, tfrLQ1,
-        tfrL02, tfrLF2, tfrLQ2,
-        tfrL03, tfrLF3, tfrLQ3
-        ):
-    Z1 = tfrLF1 * tfrLQ1
-    ZN1 = (Z1 - np.mean(Z1)) / np.std(Z1)
-    Z2 = tfrLF2 * tfrLQ2
-    ZN2 = (Z2 - np.mean(Z2)) / np.std(Z2)
-    Z3 = tfrLF3 * tfrLQ3
-    ZN3 = (Z3 - np.mean(Z3)) / np.std(Z3)
-    SN1 = gen_spectral_flux(tfrL01, invert=False, norm=True)
-    SN2 = gen_spectral_flux(tfrL02, invert=False, norm=True)
-    SN3 = gen_spectral_flux(tfrL03, invert=False, norm=True)
-    SIN1 = gen_spectral_flux(tfrL01, invert=True, norm=True)
-    SIN2 = gen_spectral_flux(tfrL02, invert=True, norm=True)
-    SIN3 = gen_spectral_flux(tfrL03, invert=True, norm=True)
-    SN = np.concatenate((SN1, SN2, SN3), axis=0)
-    SIN = np.concatenate((SIN1, SIN2, SIN3), axis=0)
-    ZN = np.concatenate((ZN1, ZN2, ZN3), axis=0)
-    SN_SIN_ZN = np.concatenate((SN, SIN, ZN), axis=0)
-    return SN_SIN_ZN
-
-# -----------------------------------------------------------------------------
-#                             Melody Extraction
-# -----------------------------------------------------------------------------
+    return tfrL0, tfrLF, tfrLQ, f, q, t, central_frequencies 
 
 def melody_feature_extraction(x):
     # --- Args ---
@@ -231,22 +165,14 @@ def melody_feature_extraction(x):
     Z = tfrLF * tfrLQ
     return Z, t, CenFreq
 
-class temp_dataset(torch.utils.data.Dataset):
-    def __init__(self, data):
-        self.data = torch.from_numpy(data).unsqueeze(1).float()
-    def __getitem__(self, index):
-        return self.data[index]
-    def __len__(self):
-        return self.data.shape[0]
-
 def patch_extraction(Z, patch_size, th):
     # Z is the input spectrogram or any kind of time-frequency representation
-    M, N = Z.shape    
+    M, N = np.shape(Z)    
     half_ps = int(np.floor(float(patch_size)/2)) #12
 
     Z = np.pad(Z, ((0, half_ps), (half_ps, half_ps)))
     
-    M, N = Z.shape
+    M, N = np.shape(Z)
     
     data = []
     mapping = []
@@ -266,6 +192,14 @@ def patch_extraction(Z, patch_size, th):
     mapping = np.array(mapping[:-1])
     Z = Z[:M-half_ps,:]
     return data, mapping, half_ps, N, Z
+
+class temp_dataset(torch.utils.data.Dataset):
+    def __init__(self, data):
+        self.data = torch.from_numpy(data).unsqueeze(1).float()
+    def __getitem__(self, index):
+        return self.data[index]
+    def __len__(self):
+        return self.data.shape[0]
 
 def patch_prediction(modelname, data, patch_size,
                      batch_size, num_workers, pin_memory):
@@ -329,18 +263,37 @@ def findpeaks(x, th):
     mask = pre * post
     ext_mask = np.pad(mask,1)
     
+    #pdata = x * ext_mask
+    #pdata = pdata-np.tile(th*np.amax(pdata, axis=0),(M,1))
+    #pks = np.where(pdata>0)
+    #pks = pks[0]
+    
     locs = np.where(ext_mask==1)
     locs = locs[0]
     return locs
 
-def melody_extraction(audio, batch_size, num_workers, pin_memory):
+def melody_extraction(filename1, filename2=None, mix_ratio=0.):
     
     # --- Args ---
     patch_size = 25
     th = 0.5
     modelname = 'model3_patch25'
     max_method = 'posterior'
+    
+    # --- Merge File ---
+    audio = read_file(filename1)
+    if filename2 is not None:
+        aug_audio = read_file(filename2)
         
+        # --- Combine Monophonic & Instrumental ---
+        if len(audio) < len(aug_audio):
+            randstart = np.random.randint(0, len(aug_audio)-len(audio)+1)
+            audio = audio*(1-mix_ratio) + aug_audio[randstart:randstart+len(audio)]*mix_ratio
+        else:
+            shortage = len(audio)-len(aug_audio)
+            randstart = np.random.randint(0, shortage+1)
+            audio = audio*(1-mix_ratio) + np.pad(aug_audio, (randstart, shortage-randstart))*mix_ratio
+    
     # --- Feature Extraction ---
     Z, t, CenFreq = melody_feature_extraction(audio)
     
@@ -348,43 +301,7 @@ def melody_extraction(audio, batch_size, num_workers, pin_memory):
     data, mapping, half_ps, N, Z = patch_extraction(Z, patch_size, th)
     
     # --- Pitch Prediction ---
-    pred = patch_prediction(modelname, data, patch_size, batch_size, num_workers, pin_memory)
+    pred = patch_prediction(modelname, data, patch_size)
     result = contour_prediction(mapping, pred, N, half_ps, Z, t, CenFreq, max_method)
 
     return result
-
-# -----------------------------------------------------------------------------
-#                             Complete Flow
-# -----------------------------------------------------------------------------
-
-def full_flow(filename1, filename2=None, mix_ratio=0.):
-    audio = read_file(filename1)
-    if filename2 is not None:
-        aug_audio = read_file(filename2)
-        
-        # --- Combine Monophonic & Instrumental ---
-        if len(audio) < len(aug_audio):
-            randstart = np.random.randint(0, len(aug_audio)-len(audio)+1)
-            audio = audio*(1-mix_ratio) + aug_audio[randstart:randstart+len(audio)]*mix_ratio
-        else:
-            shortage = len(audio)-len(aug_audio)
-            randstart = np.random.randint(0, shortage+1)
-            audio = audio*(1-mix_ratio) + np.pad(aug_audio, (randstart, shortage-randstart))*mix_ratio
-            
-    return full_feature_extraction(*cfp_feature_extraction(audio))
-
-def test_flow(filename1, filename2=None, mix_ratio=0., batch_size=64, num_workers=0, pin_memory=False):
-    audio = read_file(filename1)
-    if filename2 is not None:
-        aug_audio = read_file(filename2)
-        
-        # --- Combine Monophonic & Instrumental ---
-        if len(audio) < len(aug_audio):
-            randstart = np.random.randint(0, len(aug_audio)-len(audio)+1)
-            audio = audio*(1-mix_ratio) + aug_audio[randstart:randstart+len(audio)]*mix_ratio
-        else:
-            shortage = len(audio)-len(aug_audio)
-            randstart = np.random.randint(0, shortage+1)
-            audio = audio*(1-mix_ratio) + np.pad(aug_audio, (randstart, shortage-randstart))*mix_ratio
-            
-    return full_feature_extraction(*cfp_feature_extraction(audio)), melody_extraction(audio, batch_size, num_workers, pin_memory)

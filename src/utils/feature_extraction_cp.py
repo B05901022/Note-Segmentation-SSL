@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jun  3 19:51:19 2020
+Created on Wed Jun 17 12:14:39 2020
 
 @author: Austin Hsu
 """
@@ -9,12 +9,14 @@ import scipy.io.wavfile
 import scipy.signal
 import scipy.fftpack
 import numpy as np
+import cupy as cp
 import torch
 import os
 from src.model.Patch_CNN import KitModel
 
 def read_file(filename: str) -> (np.array, int):
     """Read files"""
+    # --- Load File ---
     sample_rate, audio = scipy.io.wavfile.read(filename)
     audio = audio.astype(np.float32)
     if len(audio.shape)==2:
@@ -44,8 +46,9 @@ def STFT(x, fr, fs, Hop, h):
         indices = np.mod(N + tau, N) + 1                                             
         tfr[indices-1, icol] = x[ti+tau-1] * h[Lh+tau-1] \
                                 /np.linalg.norm(h[Lh+tau-1])        
-
-    tfr = scipy.fftpack.fft(tfr, n=N, axis=0)
+    
+    tfr = cp.asarray(tfr)
+    tfr = cp.fft.fft(tfr, n=N, axis=0)
     tfr = abs(tfr)
     return tfr, f, t, N
 
@@ -55,9 +58,9 @@ def nonlinear_func(X, g, cutoff):
         X[X<0] = 0
         X[:cutoff, :] = 0
         X[-cutoff:, :] = 0
-        X = np.power(X, g)
+        X = cp.power(X, g)
     else:
-        X = np.log(X)
+        X = cp.log(X)
         X[:cutoff, :] = 0
         X[-cutoff:, :] = 0
     return X
@@ -89,7 +92,8 @@ def Freq2LogFreqMapping(tfr, f, fr, fc, tc, NumPerOct):
                     freq_band_transformation[i, j] = (f[j] - central_freq[i-1]) / (central_freq[i] - central_freq[i-1])
                 elif f[j] > central_freq[i] and f[j] < central_freq[i+1]:
                     freq_band_transformation[i, j] = (central_freq[i + 1] - f[j]) / (central_freq[i + 1] - central_freq[i])
-    tfrL = np.dot(freq_band_transformation, tfr)
+    freq_band_transformation = cp.asarray(freq_band_transformation)
+    tfrL = cp.dot(freq_band_transformation, tfr)
     return tfrL, central_freq
 
 def Quef2LogFreqMapping(ceps, q, fs, fc, tc, NumPerOct):
@@ -113,22 +117,23 @@ def Quef2LogFreqMapping(ceps, q, fs, fc, tc, NumPerOct):
                 freq_band_transformation[i, j] = (f[j] - central_freq[i-1])/(central_freq[i] - central_freq[i-1])
             elif f[j] > central_freq[i] and f[j] < central_freq[i+1]:
                 freq_band_transformation[i, j] = (central_freq[i + 1] - f[j]) / (central_freq[i + 1] - central_freq[i])
-
-    tfrL = np.dot(freq_band_transformation, ceps)
+    
+    freq_band_transformation = cp.asarray(freq_band_transformation)
+    tfrL = cp.dot(freq_band_transformation, ceps)
     return tfrL, central_freq
 
 def gen_spectral_flux(S, invert=False, norm=True):
-    flux = np.diff(S)
-    first_col = np.zeros((S.shape[0],1))
-    flux = np.hstack((first_col, flux))
+    flux = cp.diff(S)
+    first_col = cp.zeros((S.shape[0],1))
+    flux = cp.hstack((first_col, flux))
     
     if invert:
         flux = flux * (-1.0)
 
-    flux = np.where(flux < 0, 0.0, flux)
+    flux = cp.where(flux < 0, 0.0, flux)
 
     if norm:
-        flux = (flux - np.mean(flux)) / np.std(flux)
+        flux = (flux - np.mean(flux)) / (np.std(flux) + 1e-8)
 
     return flux
 
@@ -136,18 +141,18 @@ def CFP_filterbank(x, fr, fs, Hop, h, fc, tc, g, NumPerOctave):
     NumofLayer = np.size(g)
 
     tfr, f, t, N = STFT(x, fr, fs, Hop, h)
-    tfr = np.power(tfr, g[0])
+    tfr = cp.power(tfr, g[0])
     tfr0 = tfr # original STFT
-    ceps = np.zeros(tfr.shape)
+    #ceps = np.zeros(tfr.shape)
 
     for gc in range(1, NumofLayer):
         if np.remainder(gc, 2) == 1:
             tc_idx = round(fs*tc) # 16
-            ceps = np.real(np.fft.fft(tfr, axis=0))/np.sqrt(N)
+            ceps = cp.real(cp.fft.fft(tfr, axis=0))/np.sqrt(N)
             ceps = nonlinear_func(ceps, g[gc], tc_idx)
         else:
             fc_idx = round(fc/fr) # 40
-            tfr = np.real(np.fft.fft(ceps, axis=0))/np.sqrt(N)
+            tfr = cp.real(cp.fft.fft(ceps, axis=0))/np.sqrt(N)
             tfr = nonlinear_func(tfr, g[gc], fc_idx)
 
     tfr0 = tfr0[:int(round(N/2)),:]
@@ -205,10 +210,10 @@ def full_feature_extraction(
     SIN1 = gen_spectral_flux(tfrL01, invert=True, norm=True)
     SIN2 = gen_spectral_flux(tfrL02, invert=True, norm=True)
     SIN3 = gen_spectral_flux(tfrL03, invert=True, norm=True)
-    SN = np.concatenate((SN1, SN2, SN3), axis=0)
-    SIN = np.concatenate((SIN1, SIN2, SIN3), axis=0)
-    ZN = np.concatenate((ZN1, ZN2, ZN3), axis=0)
-    SN_SIN_ZN = np.concatenate((SN, SIN, ZN), axis=0)
+    SN = cp.concatenate((SN1, SN2, SN3), axis=0)
+    SIN = cp.concatenate((SIN1, SIN2, SIN3), axis=0)
+    ZN = cp.concatenate((ZN1, ZN2, ZN3), axis=0)
+    SN_SIN_ZN = cp.concatenate((SN, SIN, ZN), axis=0)
     return SN_SIN_ZN
 
 # -----------------------------------------------------------------------------
@@ -343,6 +348,7 @@ def melody_extraction(audio, batch_size, num_workers, pin_memory):
         
     # --- Feature Extraction ---
     Z, t, CenFreq = melody_feature_extraction(audio)
+    Z = cp.asnumpy(Z)
     
     # --- Patch Extraction ---
     data, mapping, half_ps, N, Z = patch_extraction(Z, patch_size, th)

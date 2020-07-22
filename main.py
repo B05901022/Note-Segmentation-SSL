@@ -71,12 +71,14 @@ if __name__ == '__main__':
     trainer_parser.add_argument('--save_path', help='Path to save weight', default='./checkpoints/', type=str)
     trainer_parser.add_argument('--project', help='Wandb project name', default='note_segmentation', type=str)
     trainer_parser.add_argument('--entity', help='Wandb user name', default='austinhsu', type=str)
-    trainer_parser.add_argument('--amp_level', help='Amp level for mix precision training', default='O0', type=str)
+    trainer_parser.add_argument('--amp_level', help='Amp level for mixed precision training', default='O0', type=str)
     trainer_parser.add_argument('--accumulate_grad_batches', help='Gradient accumulation', default=1, type=int)
+    trainer_parser.add_argument('--use_amp', help='Use and import amp for mixed precision training', action='store_true')
     trainer_parser.add_argument('--train', help='Run in train mode', action='store_true')
     trainer_parser.add_argument('--test', help='Run in test mode', action='store_true')
 
     trainer_parser.set_defaults(
+        use_amp=False,
     	train=True,
     	test=False
     )

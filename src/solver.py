@@ -48,6 +48,7 @@ class OnOffsetSolver(object):
     def __init__(self, hparams):
         
         self.hparams = hparams
+        self.hparams.use_amp = False
             
         # --- Build Model/Loss ---
         self.__build_model(model_type=self.hparams.model_type)

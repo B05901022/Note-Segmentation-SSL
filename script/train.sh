@@ -31,6 +31,7 @@ accumulate_grad_batches=1
 #--shuffle
 #--pin_memory
 #--use_cp
+#--use_amp
 #--train
 #--test
 

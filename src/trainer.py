@@ -21,6 +21,7 @@ class Trainer:
         entity: Wandb user name
         amp_level: Amp level for mix precision training
         accumulate_grad_batches: Gradient accumulation
+        use_amp: Use and import amp for mixed precision training
     """
     def __init__(self, hparams):
         self.hparams = hparams
@@ -47,13 +48,14 @@ class Trainer:
         self.logger.watch(solver.feature_extractor)
         solver.initsonglist()
         optimizer, scheduler = solver.configure_optimizers()
-        if solver.hparams.use_amp:
+        if self.hparams.use_amp:
             import amp
             solver.feature_extractor, optimizer = amp.initialize(
                 solver.feature_extractor,
                 optimizer,
                 opt_level=self.hparams.amp_level
             )
+            solver.hparams.use_amp = True
         optimizer.zero_grad()
         min_loss = 10000.0
         
@@ -67,7 +69,7 @@ class Trainer:
             solver.feature_extractor.train()
             self.song_number = len(solver.supervised_datalist)
             for train_update in range(self.song_number*solver.hparams.se):
-                _ = self.per_song_train_loop(solver, optimizer, scheduler, train_update)
+                _ = self.per_song_train_loop(solver, optimizer, scheduler, train_update, amp)
                 
             # --- Valid Loop ---
             solver.feature_extractor.eval()
@@ -86,8 +88,8 @@ class Trainer:
                     'model': solver.feature_extractor.state_dict(),
                     'hparams': solver.hparams
                     }
-                if solver.hparams.use_amp:
-                    checkpoint['amp'] = amp.state_dict(),
+                if self.hparams.use_amp:
+                    check_point['amp'] = amp.state_dict(),
                 torch.save(check_point, self.hparams.save_path+'.pt')
             
             self.train_epoch += 1
@@ -127,7 +129,7 @@ class Trainer:
             log_dict[test_key] = np.mean(log_dict[test_key])
         self.logger.log(log_dict)
         
-    def per_song_train_loop(self, solver, optimizer, scheduler, update):
+    def per_song_train_loop(self, solver, optimizer, scheduler, update, amp):
         train_dataloader = solver.train_dataloader()
         tqdm_iterator = tqdm(total=len(train_dataloader))
         for batch_idx, batch in enumerate(train_dataloader):
@@ -137,7 +139,7 @@ class Trainer:
             get_train_output = AttributeDict(get_train_output)
             
             # --- Update Model ---
-            if solver.hparams.use_amp:
+            if self.hparams.use_amp:
                 with amp.scale_loss(get_train_output.loss, optimizer) as scaled_loss:
                     scaled_loss.backward()
             else:

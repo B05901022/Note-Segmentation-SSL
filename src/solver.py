@@ -183,7 +183,7 @@ class OnOffsetSolver(object):
             
             if 'VAT' in self.hparams.loss_type:
                 # === VAT Loss ===
-                smsup_loss += self.smLossFunc(self, sdt_hat[sup_len:])
+                smsup_loss += self.smLossFunc(self.feature_extractor, sdt_hat[sup_len:])
         
         # --- Total loss ---
         loss = super_loss + smsup_loss + en_loss
@@ -394,6 +394,20 @@ class OnOffsetSolver(object):
     
     def test_dataloader(self):
         return self.__dataloader(mode='test')
+    
+    def load_from_checkpoint(self, checkpoint_path):
+        checkpoint = torch.load(self.hparams.save_path+'.pt')
+        self.hparams = checkpoint['hparams']
+        if self.hparams.use_amp:
+            import amp
+            self.feature_extractor = amp.initialize(
+                self.feature_extractor,
+                opt_level=self.hparams.amp_level
+            )
+            self.feature_extractor.load_state_dict(checkpoint['model'])
+            amp.load_state_dict(checkpoint['amp'])
+        else:
+            self.feature_extractor.load_state_dict(checkpoint['model'])
     
     #def __call__(self, x):
     #    """To use forward like nn.Module"""

@@ -7,7 +7,6 @@ Created on Wed Jul  8 00:52:22 2020
 
 from src.utils.tools import AttributeDict
 import wandb
-import amp
 import torch
 import numpy as np
 from tqdm import tqdm
@@ -48,11 +47,13 @@ class Trainer:
         self.logger.watch(solver.feature_extractor)
         solver.initsonglist()
         optimizer, scheduler = solver.configure_optimizers()
-        solver.feature_extractor, optimizer = amp.initialize(
-            solver.feature_extractor,
-            optimizer,
-            opt_level=self.hparams.amp_level
-        )
+        if solver.hparams.use_amp:
+            import amp
+            solver.feature_extractor, optimizer = amp.initialize(
+                solver.feature_extractor,
+                optimizer,
+                opt_level=self.hparams.amp_level
+            )
         optimizer.zero_grad()
         min_loss = 10000.0
         
@@ -83,8 +84,10 @@ class Trainer:
                 min_loss = avg_valid_loss
                 check_point = {
                     'model': solver.feature_extractor.state_dict(),
-                    'amp': amp.state_dict(),
+                    'hparams': solver.hparams
                     }
+                if solver.hparams.use_amp:
+                    checkpoint['amp'] = amp.state_dict(),
                 torch.save(check_point, self.hparams.save_path+'.pt')
             
             self.train_epoch += 1
@@ -97,13 +100,6 @@ class Trainer:
         # --- Init ---
         self.logger.watch(solver.feature_extractor)
         solver.initsonglist()
-        solver.feature_extractor = amp.initialize(
-            solver.feature_extractor,
-            opt_level=self.hparams.amp_level
-        )
-        checkpoint = torch.load(self.hparams.save_path+'.pt')
-        solver.feature_extractor.load_state_dict(checkpoint['model'])
-        amp.load_state_dict(checkpoint['amp'])
         
         # --- Log Dict ---
         log_dict = {
@@ -141,8 +137,11 @@ class Trainer:
             get_train_output = AttributeDict(get_train_output)
             
             # --- Update Model ---
-            with amp.scale_loss(get_train_output.loss, optimizer) as scaled_loss:
-                scaled_loss.backward()
+            if solver.hparams.use_amp:
+                with amp.scale_loss(get_train_output.loss, optimizer) as scaled_loss:
+                    scaled_loss.backward()
+            else:
+                get_train_output.backward()
             if (self.train_step+1)%self.hparams.accumulate_grad_batches == 0:
                 optimizer.step()
                 optimizer.zero_grad()

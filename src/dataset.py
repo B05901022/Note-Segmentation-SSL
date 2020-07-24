@@ -9,16 +9,16 @@ import os
 import torch
 import numpy as np
 import cupy as cp
-import src.utils.feature_extraction_cp.full_flow as cp_full_flow
-import src.utils.feature_extraction.full_flow as np_full_flow
-import src.utils.feature_extraction_cp.test_flow as cp_test_flow
-import src.utils.feature_extraction.test_flow as np_test_flow
+from src.utils.feature_extraction_cp import full_flow as cp_full_flow
+from src.utils.feature_extraction import full_flow as np_full_flow
+from src.utils.feature_extraction_cp import test_flow as cp_test_flow
+from src.utils.feature_extraction import test_flow as np_test_flow
 from src.utils.audio_augment import transform_method
 
 class TrainDataset(torch.utils.data.Dataset):
     
     def __init__(self, data_path, dataset1, dataset2, filename1, filename2, mix_ratio,
-                 device, use_cp=True,
+                 device, use_cp=True, semi=False,
                  num_feat=9, k=9,
                  transform_dict={'cutout'    :False,
                                  'freq_mask' :{'freq_mask_param':100},
@@ -26,9 +26,11 @@ class TrainDataset(torch.utils.data.Dataset):
                                  'pitchshift':{'shift_range':48}, 
                                  'addnoise'  :False,
                 }):
-        
+
         # --- Args ---
         self.window_size = 2*k+1
+        self.k = k
+        self.semi = semi
         self.dataset1 = dataset1
         self.dataset2 = dataset2
         self.filename1 = filename1
@@ -37,38 +39,44 @@ class TrainDataset(torch.utils.data.Dataset):
         
         # --- Load File ---
         if use_cp:
-            with cp.cuda.Device(device=device):
+            with cp.cuda.Device(device=device.index):
                 self.feature = cp_full_flow(
                     os.path.join(data_path, dataset1, 'wav', filename1+'.wav'), 
                     os.path.join(data_path, dataset2, 'wav', filename2+'.wav') if filename2 is not None else None,
                     mix_ratio=self.mix_ratio
                     )
+            self.feature = cp.asnumpy(self.feature)
         else:
             self.feature = np_full_flow(
                 os.path.join(data_path, dataset1, 'wav', filename1+'.wav'), 
                 os.path.join(data_path, dataset2, 'wav', filename2+'.wav') if filename2 is not None else None,
                 mix_ratio=self.mix_ratio
                 )
-        self.feature = torch.from_numpy(self.feature)
+        self.feature = torch.from_numpy(self.feature).float()
         self.feature = self.feature.reshape((num_feat,1566//num_feat,-1))
-        self.sdt = np.load(os.path.join(data_path, dataset1, 'sdt', filename1+'_sdt.npy'))
-        self.sdt = torch.from_numpy(self.sdt)
-        
+        self.len = self.feature.shape[-1]
+        if not self.semi:
+            self.sdt = np.load(os.path.join(data_path, dataset1, 'sdt', filename1+'_sdt.npy'))
+            self.sdt = torch.from_numpy(self.sdt)
+
         # --- Pad Length ---
         self.feature = torch.cat([
             torch.zeros((num_feat,1566//num_feat,k)),
             self.feature,
             torch.zeros((num_feat,1566//num_feat,k))
-            ])
+            ], dim=-1)
         
         # --- Transform ---
         self.transform = transform_method(transform_dict)
         self._DataPreprocess()
         
     def __getitem__(self, index):
-        frame_feat = self.feature[:, :, index+self.k-1:index+self.k-1+self.window_size]
-        frame_sdt = self.sdt[index]
-        return frame_feat, frame_sdt
+        frame_feat = self.feature[:, :, index:index+self.window_size]
+        if not self.semi:
+            frame_sdt = self.sdt[index].float()
+            return frame_feat, frame_sdt
+        else:
+            return frame_feat
     
     def _DataPreprocess(self):
         # --- Normalize (for mask) ---
@@ -78,12 +86,12 @@ class TrainDataset(torch.utils.data.Dataset):
         self.feature = self.transform(self.feature.unsqueeze(0)).squeeze(0)
     
     def __len__(self):
-        return self.sdt.shape[0]
+        return self.len
     
 class EvalDataset(torch.utils.data.Dataset):
     
     def __init__(self, data_path, dataset1, filename1,
-                 device, use_cp=True,
+                 device, use_cp=True, no_pitch=False,
                  num_feat=9, k=9,
                  batch_size=64, num_workers=0, pin_memory=False):
         
@@ -95,33 +103,33 @@ class EvalDataset(torch.utils.data.Dataset):
         
         # --- Load File ---
         if use_cp:
-            with cp.cuda.Device(device=device):
+            with cp.cuda.Device(device=device.index):
                 self.feature, self.pitch = cp_test_flow(os.path.join(data_path, dataset1, 'wav', filename1+'.wav'), batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
         else:
             self.feature, self.pitch = np_test_flow(os.path.join(data_path, dataset1, 'wav', filename1+'.wav'), batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
-        self.feature = torch.from_numpy(self.feature)
+        self.feature = torch.from_numpy(self.feature).float()
         self.feature = self.feature.reshape((num_feat,1566//num_feat,-1))
+        self.len = self.feature.shape[-1]
         self.sdt = np.load(os.path.join(data_path, dataset1, 'sdt', filename1+'_sdt.npy'))
         self.sdt = torch.from_numpy(self.sdt)
         
         #self.pitch = np.load(os.path.join(data_path, dataset1, 'pitch', filename1+'_pitch.npy'))
-        self.pitch_intervals = np.load(os.path.join(data_path, dataset1, 'pitch_intervals', filename1+'_pi.npy'))
-        self.onoffset_intervals = np.load(os.path.join(data_path, dataset1, 'onoffset_intervals', filename1+'_pi.npy'))
-        self.onset_intervals = self.onoffset_intervals[:,0]
-
+        if not no_pitch:
+            self.pitch_intervals = np.load(os.path.join(data_path, dataset1, 'pitch_intervals', filename1+'_pi.npy'))
+            self.onoffset_intervals = np.load(os.path.join(data_path, dataset1, 'onoffset_intervals', filename1+'_pi.npy'))
+            self.onset_intervals = self.onoffset_intervals[:,0]
         
         # --- Pad Length ---
         self.feature = torch.cat([
             torch.zeros((num_feat,1566//num_feat,k)),
             self.feature,
             torch.zeros((num_feat,1566//num_feat,k))
-            ])
+            ], dim=-1)
         
     def __getitem__(self, index):
-        frame_feat = self.feature[:, :, index+self.k-1:index+self.k-1+self.window_size]
-        frame_sdt = self.sdt[index]
+        frame_feat = self.feature[:, :, index:index+self.window_size]
+        frame_sdt = self.sdt[index].float()
         return frame_feat, frame_sdt
     
     def __len__(self):
-        return self.sdt.shape[0]
-    
+        return self.len

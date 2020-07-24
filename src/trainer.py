@@ -8,7 +8,9 @@ Created on Wed Jul  8 00:52:22 2020
 from src.utils.tools import AttributeDict
 import wandb
 import torch
+import os
 import numpy as np
+import apex.amp as amp
 from tqdm import tqdm
 
 class Trainer:
@@ -21,7 +23,6 @@ class Trainer:
         entity: Wandb user name
         amp_level: Amp level for mix precision training
         accumulate_grad_batches: Gradient accumulation
-        use_amp: Use and import amp for mixed precision training
     """
     def __init__(self, hparams):
         self.hparams = hparams
@@ -40,22 +41,31 @@ class Trainer:
             group=None
             )
         
-    
     def fit(self, solver):
         """Does training training loop."""
         
+        # --- Device ---
+        if self.hparams.use_gpu:
+            os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
+            memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
+            for idx, memory in enumerate(memory_available):
+                print(f'cuda:{idx} available memory: {memory}')
+            self.device = torch.device(f'cuda:{np.argmax(memory_available)}')
+            print(f'Selected cuda:{np.argmax(memory_available)} as device')
+        else:
+            self.device = torch.device('cpu')
+        solver.device = self.device
+
         # --- Init ---
         self.logger.watch(solver.feature_extractor)
         solver.initsonglist()
+        solver.feature_extractor = solver.feature_extractor.to(self.device)
         optimizer, scheduler = solver.configure_optimizers()
-        if self.hparams.use_amp:
-            import amp
-            solver.feature_extractor, optimizer = amp.initialize(
-                solver.feature_extractor,
-                optimizer,
-                opt_level=self.hparams.amp_level
-            )
-            solver.hparams.use_amp = True
+        solver.feature_extractor, optimizer = amp.initialize(
+            solver.feature_extractor,
+            optimizer,
+            opt_level=self.hparams.amp_level
+        )
         optimizer.zero_grad()
         min_loss = 10000.0
         
@@ -86,10 +96,9 @@ class Trainer:
                 min_loss = avg_valid_loss
                 check_point = {
                     'model': solver.feature_extractor.state_dict(),
+                    'amp': amp.state_dict(),
                     'hparams': solver.hparams
                     }
-                if self.hparams.use_amp:
-                    check_point['amp'] = amp.state_dict(),
                 torch.save(check_point, self.hparams.save_path+'.pt')
             
             self.train_epoch += 1
@@ -102,6 +111,7 @@ class Trainer:
         # --- Init ---
         self.logger.watch(solver.feature_extractor)
         solver.initsonglist()
+        self.device = solver.device
         
         # --- Log Dict ---
         log_dict = {
@@ -133,17 +143,20 @@ class Trainer:
         train_dataloader = solver.train_dataloader()
         tqdm_iterator = tqdm(total=len(train_dataloader))
         for batch_idx, batch in enumerate(train_dataloader):
-            
+
+            if solver.dataset2 is not None:
+                batch[0] = [i.to(self.device) for i in batch[0]] # Train dataset
+                batch[1] = batch[1].to(self.device) # Semi dataset
+            else:
+                batch = [i.to(self.device) for i in batch] # Train dataset
+
             # --- Train Step ---
-            get_train_output = solver.train_step(batch, batch_idx)
+            get_train_output = solver.training_step(batch, batch_idx)
             get_train_output = AttributeDict(get_train_output)
             
             # --- Update Model ---
-            if self.hparams.use_amp:
-                with amp.scale_loss(get_train_output.loss, optimizer) as scaled_loss:
-                    scaled_loss.backward()
-            else:
-                get_train_output.backward()
+            with amp.scale_loss(get_train_output.loss, optimizer) as scaled_loss:
+                scaled_loss.backward()
             if (self.train_step+1)%self.hparams.accumulate_grad_batches == 0:
                 optimizer.step()
                 optimizer.zero_grad()
@@ -173,6 +186,8 @@ class Trainer:
         outputs = []
         for batch_idx, batch in enumerate(valid_dataloader):
             
+            batch = [i.to(self.device) for i in batch]
+
             # --- Valid Step ---
             get_valid_output = solver.validation_step(batch, batch_idx)
             get_valid_output = AttributeDict(get_valid_output)
@@ -204,6 +219,8 @@ class Trainer:
         outputs = []
         for batch_idx, batch in enumerate(test_dataloader):
             
+            batch = [i.to(self.device) for i in batch]
+
             # --- Test Step ---
             get_test_output = solver.test_step(batch, batch_idx)
             get_test_output = AttributeDict(get_test_output)

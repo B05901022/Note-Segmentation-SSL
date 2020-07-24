@@ -8,7 +8,7 @@ Created on Fri Jul 19 14:24:23 2019
 import torch
 import torch.nn as nn
 import math
-from model_extend.ShakeDrop import ShakeDrop
+from src.model.ShakeDrop import ShakeDrop
 
 class PyramidBlock(nn.Module):
     

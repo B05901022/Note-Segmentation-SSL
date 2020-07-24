@@ -18,6 +18,7 @@ import torch.nn.functional as F
 import random
 import os
 import mir_eval
+import apex.amp as amp
 from collections import OrderedDict, deque
 
 class OnOffsetSolver(object):
@@ -74,8 +75,8 @@ class OnOffsetSolver(object):
         """Loads meta data"""
         if self.dataset1 == "TONAS":
             self.supervised_datalist = open(os.path.join(self.hparams.meta_path, "tonas.txt"), "r").read().split('\n')
-            if self.hparams.val_check_interval > 0:
-                raise ValueError("For TONAS training, validation is not done during training.")
+            #if self.hparams.val_check_interval > 0:
+            #    raise ValueError("For TONAS training, validation is not done during training.")
         elif self.dataset1 == "DALI":
             self.supervised_datalist = open(os.path.join(self.hparams.meta_path, "dali_train.txt"), "r").read().split('\n')
         else:
@@ -129,7 +130,7 @@ class OnOffsetSolver(object):
             raise NotImplementedError("Given model name %s is not available, please try from [Resnet_18, PyramidNet_ShakeDrop]."%model_type)
             
     def __build_loss(self):
-        self.trLossFunc = nn.CrossEntropyLoss()
+        self.trLossFunc = nn.BCELoss()
         self.enLossFunc = EntropyLoss()
         if "VATo" in self.hparams.loss_type:
             self.smLossFunc = VATLoss_onset()
@@ -142,8 +143,8 @@ class OnOffsetSolver(object):
     def training_step(self, batch, batch_idx):
         """
         batch:
-            supervised_data (+ instrumental_data)
-            semi_supervised_data (optional)
+            supervised_data (+ instrumental_data): feat, sdt
+            semi_supervised_data (optional): feat
         data:
             feat: (batch_size, 9, 174, 19)
             sdt:  (batch_size, 6)
@@ -157,8 +158,11 @@ class OnOffsetSolver(object):
         else:
             supervised_data, semi_supervised_data = batch
             sup_len = supervised_data[0].size(0)
-            feat = torch.cat((supervised_data[0], semi_supervised_data[0]), dim=0)
-            sdt = torch.cat((supervised_data[1], semi_supervised_data[1]), dim=0)
+            if 'EntMin' in self.hparams.loss_type:
+                feat = torch.cat((supervised_data[0], semi_supervised_data), dim=0)
+            else:
+                feat = supervised_data[0]
+            sdt = supervised_data[1]
         
         sdt4 = torch.max(sdt[:,3], sdt[:,5]).view(-1, 1)
         sdt4 = torch.cat((sdt[:,:2], sdt4), dim=1)
@@ -184,7 +188,7 @@ class OnOffsetSolver(object):
             
             if 'VAT' in self.hparams.loss_type:
                 # === VAT Loss ===
-                smsup_loss += self.smLossFunc(self.feature_extractor, sdt_hat[sup_len:])
+                smsup_loss += self.smLossFunc(self.feature_extractor, semi_supervised_data)
         
         # --- Total loss ---
         loss = super_loss + smsup_loss + en_loss
@@ -295,7 +299,7 @@ class OnOffsetSolver(object):
     
     def configure_optimizers(self):
         # --- Optimizer ---
-        optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)
+        optimizer = torch.optim.AdamW(self.feature_extractor.parameters(), lr=self.hparams.lr)
         
         # --- Scheduler ---
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, self.hparams.max_steps)
@@ -339,9 +343,9 @@ class OnOffsetSolver(object):
             else:
                 instrumental_song_name = None
             supervised_song_dataset = TrainDataset(
-                data_path=self.hparams.data_path, dataset1=self.dataset1, dataset2=self.dataset2,
+                data_path=self.hparams.data_path, dataset1=self.dataset1, dataset2=self.dataset3,
                 filename1=supervised_song_name, filename2=instrumental_song_name, mix_ratio=self.hparams.mix_ratio,
-                device=self.device, use_cp=(self.dataset1!='DALI') and self.hparams.use_cp,
+                device=self.device, use_cp=(self.dataset1!='DALI') and self.hparams.use_cp, semi=False,
                 num_feat=self.hparams.num_feat, k=self.hparams.k
                 )
             
@@ -351,7 +355,7 @@ class OnOffsetSolver(object):
                 semi_supervised_song_dataset = TrainDataset(
                     data_path=self.hparams.data_path, dataset1=self.dataset2, dataset2=None, 
                     filename1=semi_supervised_song_name, filename2=None, mix_ratio=self.hparams.mix_ratio,
-                    device=self.device, use_cp=self.hparams.use_cp,
+                    device=self.device, use_cp=self.hparams.use_cp, semi=True,
                     num_feat=self.hparams.num_feat, k=self.hparams.k
                     )
             
@@ -368,7 +372,7 @@ class OnOffsetSolver(object):
             self.song_dict['valid'].extend([valid_song_name])
             self.validation_dataset = EvalDataset(
                 data_path=self.hparams.data_path, dataset1=self.dataset4, filename1=valid_song_name,
-                device=self.device, use_cp=(self.dataset4!='DALI') and self.hparams.use_cp,
+                device=self.device, use_cp=(self.dataset4!='DALI') and self.hparams.use_cp, no_pitch=True,
                 num_feat=self.hparams.num_feat, k=self.hparams.k,
                 batch_size=self.hparams.batch_size, num_workers=self.hparams.num_workers, pin_memory=self.hparams.pin_memory
                 )
@@ -380,7 +384,7 @@ class OnOffsetSolver(object):
             self.song_dict['test'].extend([test_song_name])
             self.testing_dataset = EvalDataset(
                 data_path=self.hparams.data_path, dataset1=self.dataset5, filename1=test_song_name,
-                device=self.device, use_cp=(self.dataset5!='DALI') and self.hparams.use_cp,
+                device=self.device, use_cp=(self.dataset5!='DALI') and self.hparams.use_cp, no_pitch=False,
                 num_feat=self.hparams.num_feat, k=self.hparams.k,
                 batch_size=self.hparams.batch_size, num_workers=self.hparams.num_workers, pin_memory=self.hparams.pin_memory
                 )
@@ -396,20 +400,29 @@ class OnOffsetSolver(object):
     def test_dataloader(self):
         return self.__dataloader(mode='test')
     
-    def load_from_checkpoint(self, checkpoint_path):
+    def load_from_checkpoint(self, checkpoint_path, use_gpu=True):
+
+        # --- Device ---
+        if use_gpu:
+            os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
+            memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
+            for idx, memory in enumerate(memory_available):
+                print(f'cuda:{idx} available memory: {memory}')
+            self.device = torch.device(f'cuda:{np.argmax(memory_available)}')
+            print(f'Selected cuda:{np.argmax(memory_available)} as device')
+        else:
+            self.device = torch.device('cpu')
+
         checkpoint = torch.load(self.hparams.save_path+'.pt')
         self.hparams = checkpoint['hparams']
-        if self.hparams.use_amp:
-            import amp
-            self.feature_extractor = amp.initialize(
-                self.feature_extractor,
-                opt_level=self.hparams.amp_level
-            )
-            self.feature_extractor.load_state_dict(checkpoint['model'])
-            amp.load_state_dict(checkpoint['amp'])
-        else:
-            self.feature_extractor.load_state_dict(checkpoint['model'])
-    
+        self.feature_extractor = self.feature_extractor.to(self.device)
+        self.feature_extractor = amp.initialize(
+            self.feature_extractor,
+            opt_level=self.hparams.amp_level
+        )
+        self.feature_extractor.load_state_dict(checkpoint['model'])
+        amp.load_state_dict(checkpoint['amp'])
+
     #def __call__(self, x):
     #    """To use forward like nn.Module"""
     #    return self.forward(x)

@@ -1,12 +1,12 @@
 # --- Args ---
 # === Solver ===
 model_type="PyramidNet_ShakeDrop"
-loss_type="VAT"
+loss_type="None" #"VAT"
 dataset1="TONAS" #Train Dataset
-dataset2="Pop_Rhythm" #Semi-Supervised Dataset
-dataset3="Pop_Rhythm_Instrumental" #Instrumental Dataset
+dataset2="None" #"Pop_Rhythm" #Semi-Supervised Dataset
+dataset3="None" #"Pop_Rhythm_Instrumental" #Instrumental Dataset
 dataset4="None" #Validation Dataset
-dataset5="DALI" #Test Dataset
+dataset5="ISMIR2014" #"DALI" #Test Dataset
 mix_ratio=0.5
 meta_path="./meta/"
 data_path="../data/"
@@ -31,7 +31,7 @@ accumulate_grad_batches=1
 #--shuffle
 #--pin_memory
 #--use_cp
-#--use_amp
+#--use_gpu
 #--train
 #--test
 
@@ -68,4 +68,5 @@ python main.py \
 	--shuffle \
 	--pin_memory \
 	--use_cp \
+	--use_gpu \
 	--train

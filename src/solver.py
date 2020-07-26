@@ -19,9 +19,10 @@ import random
 import os
 import mir_eval
 import apex.amp as amp
+import numpy as np
 from collections import OrderedDict, deque
 
-class OnOffsetSolver(object):
+class OnOffsetSolver:
     """
     Args:
         model_type: Model used
@@ -50,6 +51,8 @@ class OnOffsetSolver(object):
         
         self.hparams = hparams
         self.hparams.use_amp = False
+        self.best_epoch = 0
+        self.test_no_offset = False
             
         # --- Build Model/Loss ---
         self.__build_model(model_type=self.hparams.model_type)
@@ -202,7 +205,7 @@ class OnOffsetSolver(object):
             tqdm_dict['semi-supervised_loss'] = (smsup_loss + en_loss).item()
         output = OrderedDict({
                 'loss': loss,
-                'progress_bar': tqdm_dict,
+                'progress_bar': {i:round(tqdm_dict[i],8) for i in tqdm_dict.keys()},
                 'log': tqdm_dict
         })
             
@@ -227,7 +230,7 @@ class OnOffsetSolver(object):
         tqdm_dict = {'val_loss': loss.item()}
         output = OrderedDict({
                 'loss': loss.item(),
-                'progress_bar': tqdm_dict,
+                'progress_bar': {i:round(tqdm_dict[i],8) for i in tqdm_dict.keys()},
                 'log': tqdm_dict
         })
         return output
@@ -267,14 +270,15 @@ class OnOffsetSolver(object):
         # --- evaluation ---
         pitch_intervals, sSeq_np, dSeq_np, onSeq_np, offSeq_np, conflict_ratio = Smooth_sdt6_modified(predict_on_notes_np, threshold=0.5) # list of onset secs, ndarray
         F_on, P_on, R_on = mir_eval.onset.f_measure(onset_ans_np, pitch_intervals[:,0], window=0.05)
-        try:
-            freq_est = Naive_pitch(p_np, pitch_intervals)
-        
-            (P, R, F1) = mir_eval.transcription.offset_precision_recall_f1(ans_np, pitch_intervals, offset_ratio=0.2, offset_min_tolerance=0.05)
-            P_p, R_p, F_p, AOR = mir_eval.transcription.precision_recall_f1_overlap(ans_np, freq_ans, pitch_intervals, freq_est, pitch_tolerance=50.0, offset_ratio=None)
+        offset_ratio = None if self.test_no_offset else 0.2
+        #try:
+        freq_est = Naive_pitch(p_np, pitch_intervals)
+
+        (P, R, F1) = mir_eval.transcription.offset_precision_recall_f1(ans_np, pitch_intervals, offset_ratio=0.2, offset_min_tolerance=0.05)
+        P_p, R_p, F_p, AOR = mir_eval.transcription.precision_recall_f1_overlap(ans_np, freq_ans, pitch_intervals, freq_est, pitch_tolerance=50.0, offset_ratio=offset_ratio)
             #P_p, R_p, F_p, AOR = mir_eval.transcription.precision_recall_f1_overlap(ans_np, freq_ans, pitch_intervals, freq_est, pitch_tolerance=50.0)    
-        except:
-            P, R, F1, P_p, R_p, F_p, AOR = 0,0,0,0,0,0,0
+        #except:
+        #    P, R, F1, P_p, R_p, F_p, AOR = 0,0,0,0,0,0,0
         
         tqdm_dict = {
             'Onset_F1': F_on,
@@ -372,7 +376,7 @@ class OnOffsetSolver(object):
             self.song_dict['valid'].extend([valid_song_name])
             self.validation_dataset = EvalDataset(
                 data_path=self.hparams.data_path, dataset1=self.dataset4, filename1=valid_song_name,
-                device=self.device, use_cp=(self.dataset4!='DALI') and self.hparams.use_cp, no_pitch=True,
+                device=self.device, use_cp=(self.dataset4!='DALI') and self.hparams.use_cp, no_pitch=True, use_ground_truth=False,
                 num_feat=self.hparams.num_feat, k=self.hparams.k,
                 batch_size=self.hparams.batch_size, num_workers=self.hparams.num_workers, pin_memory=self.hparams.pin_memory
                 )
@@ -384,7 +388,7 @@ class OnOffsetSolver(object):
             self.song_dict['test'].extend([test_song_name])
             self.testing_dataset = EvalDataset(
                 data_path=self.hparams.data_path, dataset1=self.dataset5, filename1=test_song_name,
-                device=self.device, use_cp=(self.dataset5!='DALI') and self.hparams.use_cp, no_pitch=False,
+                device=self.device, use_cp=(self.dataset5!='DALI') and self.hparams.use_cp, no_pitch=False, use_ground_truth=self.hparams.use_ground_truth,
                 num_feat=self.hparams.num_feat, k=self.hparams.k,
                 batch_size=self.hparams.batch_size, num_workers=self.hparams.num_workers, pin_memory=self.hparams.pin_memory
                 )
@@ -413,7 +417,7 @@ class OnOffsetSolver(object):
         else:
             self.device = torch.device('cpu')
 
-        checkpoint = torch.load(self.hparams.save_path+'.pt')
+        checkpoint = torch.load(checkpoint_path)
         self.hparams = checkpoint['hparams']
         self.feature_extractor = self.feature_extractor.to(self.device)
         self.feature_extractor = amp.initialize(

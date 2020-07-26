@@ -25,7 +25,7 @@ log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"
 entity="austinhsu"
-checkpoint_name="epoch=20"
+checkpoint_name="epoch=93.pt"
 amp_level="O0"
 accumulate_grad_batches=1
 
@@ -55,10 +55,6 @@ python main.py \
 	--mix_ratio $mix_ratio \
 	--meta_path $meta_path \
 	--data_path $data_path \
-	--lr $lr \
-	--lr_warmup $lr_warmup \
-	--max_steps $max_steps \
-	--max_epoch $max_epoch \
 	--se $se \
 	--num_feat $num_feat \
 	--k $k \
@@ -71,10 +67,8 @@ python main.py \
 	--entity $entity \
 	--checkpoint_name $checkpoint_name \
 	--amp_level $amp_level \
-	--accumulate_grad_batches $accumulate_grad_batches \
 	--shuffle \
 	--pin_memory \
 	--use_cp \
-	--skip_val \
 	--use_gpu \
-	--train
+	--test

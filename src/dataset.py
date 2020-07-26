@@ -91,7 +91,7 @@ class TrainDataset(torch.utils.data.Dataset):
 class EvalDataset(torch.utils.data.Dataset):
     
     def __init__(self, data_path, dataset1, filename1,
-                 device, use_cp=True, no_pitch=False,
+                 device, use_cp=True, no_pitch=False, use_ground_truth=False,
                  num_feat=9, k=9,
                  batch_size=64, num_workers=0, pin_memory=False):
         
@@ -104,21 +104,25 @@ class EvalDataset(torch.utils.data.Dataset):
         # --- Load File ---
         if use_cp:
             with cp.cuda.Device(device=device.index):
-                self.feature, self.pitch = cp_test_flow(os.path.join(data_path, dataset1, 'wav', filename1+'.wav'), batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+                self.feature, self.pitch = cp_test_flow(os.path.join(data_path, dataset1, 'wav', filename1+'.wav'), use_ground_truth=use_ground_truth, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+            self.feature = cp.asnumpy(self.feature)
+            self.pitch = cp.asnumpy(self.pitch)
         else:
-            self.feature, self.pitch = np_test_flow(os.path.join(data_path, dataset1, 'wav', filename1+'.wav'), batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+            self.feature, self.pitch = np_test_flow(os.path.join(data_path, dataset1, 'wav', filename1+'.wav'), use_ground_ruth=use_ground_truth, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
         self.feature = torch.from_numpy(self.feature).float()
         self.feature = self.feature.reshape((num_feat,1566//num_feat,-1))
         self.len = self.feature.shape[-1]
         self.sdt = np.load(os.path.join(data_path, dataset1, 'sdt', filename1+'_sdt.npy'))
         self.sdt = torch.from_numpy(self.sdt)
         
-        #self.pitch = np.load(os.path.join(data_path, dataset1, 'pitch', filename1+'_pitch.npy'))
         if not no_pitch:
+            if use_ground_truth:
+                self.pitch = np.load(os.path.join(data_path, dataset1, 'pitch', filename1+'_pitch.npy'))
             self.pitch_intervals = np.load(os.path.join(data_path, dataset1, 'pitch_intervals', filename1+'_pi.npy'))
-            self.onoffset_intervals = np.load(os.path.join(data_path, dataset1, 'onoffset_intervals', filename1+'_pi.npy'))
+            self.onoffset_intervals = np.load(os.path.join(data_path, dataset1, 'onoffset_intervals', filename1+'_oi.npy'))
             self.onset_intervals = self.onoffset_intervals[:,0]
-        
+        self.pitch = self.pitch[:,1]
+
         # --- Pad Length ---
         self.feature = torch.cat([
             torch.zeros((num_feat,1566//num_feat,k)),

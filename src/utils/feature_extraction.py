@@ -370,10 +370,10 @@ def full_flow(filename1, filename2=None, mix_ratio=0.):
             shortage = len(audio)-len(aug_audio)
             randstart = np.random.randint(0, shortage+1)
             audio = audio*(1-mix_ratio) + np.pad(aug_audio, (randstart, shortage-randstart))*mix_ratio
-            
-    return full_feature_extraction(*cfp_feature_extraction(audio))
+    feat = full_feature_extraction(*cfp_feature_extraction(audio))        
+    return feat
 
-def test_flow(filename1, filename2=None, mix_ratio=0., batch_size=64, num_workers=0, pin_memory=False):
+def test_flow(filename1, filename2=None, mix_ratio=0., use_ground_truth=False, batch_size=64, num_workers=0, pin_memory=False):
     audio = read_file(filename1)
     if filename2 is not None:
         aug_audio = read_file(filename2)
@@ -386,5 +386,8 @@ def test_flow(filename1, filename2=None, mix_ratio=0., batch_size=64, num_worker
             shortage = len(audio)-len(aug_audio)
             randstart = np.random.randint(0, shortage+1)
             audio = audio*(1-mix_ratio) + np.pad(aug_audio, (randstart, shortage-randstart))*mix_ratio
-            
-    return full_feature_extraction(*cfp_feature_extraction(audio)), melody_extraction(audio, batch_size, num_workers, pin_memory)
+    feat = full_feature_extraction(*cfp_feature_extraction(audio))
+    pitch = None
+    if not use_ground_truth:
+        pitch = melody_extraction(audio, batch_size, num_workers, pin_memory)    
+    return feat, pitch

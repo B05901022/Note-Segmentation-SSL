@@ -376,6 +376,19 @@ def full_flow(filename1, filename2=None, mix_ratio=0.):
             shortage = len(audio)-len(aug_audio)
             randstart = np.random.randint(0, shortage+1)
             audio = audio*(1-mix_ratio) + np.pad(aug_audio, (randstart, shortage-randstart))*mix_ratio
+
+            # --- Ensure all available spaces are filled with instrumental tracks ---
+            vacant_list = []
+            if randstart > len(aug_audio): vacant_list += [(0,randstart)]
+            if len(audio)-randstart > 2*len(aug_audio): vacant_list += [(randstart+len(aug_audio),len(audio))]
+            while vacant_list != []:
+                start, end = vacant_list.pop(0)
+                shortage = end - start - len(aug_audio)
+                randstart = np.random.randint(start, start+shortage+1)
+                audio += np.pad(aug_audio, (randstart, len(audio)-len(aug_audio)-randstart))*mix_ratio
+                if randstart-start > len(aug_audio): vacant_list += [(start, randstart)]
+                if end-randstart > 2*len(aug_audio): vacant_list += [(randstart+len(aug_audio),end)]
+            
     feat = full_feature_extraction(*cfp_feature_extraction(audio))        
     return feat
 
@@ -392,6 +405,19 @@ def test_flow(filename1, filename2=None, mix_ratio=0., use_ground_truth=False, b
             shortage = len(audio)-len(aug_audio)
             randstart = np.random.randint(0, shortage+1)
             audio = audio*(1-mix_ratio) + np.pad(aug_audio, (randstart, shortage-randstart))*mix_ratio
+
+            # --- Ensure all available spaces are filled with instrumental tracks ---
+            vacant_list = []
+            if randstart > len(aug_audio): vacant_list += [(0,randstart)]
+            if len(audio)-randstart > 2*len(aug_audio): vacant_list += [(randstart+len(aug_audio),len(audio))]
+            while vacant_list != []:
+                start, end = vacant_list.pop(0)
+                shortage = end - start - len(aug_audio)
+                randstart = np.random.randint(start, start+shortage+1)
+                audio += np.pad(aug_audio, (randstart, len(audio)-len(aug_audio)-randstart))*mix_ratio
+                if randstart-start > len(aug_audio): vacant_list += [(start, randstart)]
+                if end-randstart > 2*len(aug_audio): vacant_list += [(randstart+len(aug_audio),end)]
+
     feat = full_feature_extraction(*cfp_feature_extraction(audio))
     pitch = None
     if not use_ground_truth:

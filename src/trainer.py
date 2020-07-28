@@ -167,7 +167,7 @@ class Trainer:
         # --- Init ---
         solver.initsonglist()
         if self.best_epoch is not None:
-            solver.load_from_checkpoint(os.path.join(hparams.save_path, f'epoch={self.best_epoch}.pt'), use_gpu=self.hparams.use_gpu)
+            solver.load_from_checkpoint(os.path.join(self.hparams.save_path, f'epoch={self.best_epoch}.pt'), use_gpu=self.hparams.use_gpu)
         else:
             self.logger.watch(solver.feature_extractor)
         self.device = solver.device

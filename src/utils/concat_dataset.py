@@ -8,7 +8,7 @@ Created on Wed May 27 02:45:57 2020
 import torch
 
 class ConcatDataset(torch.utils.data.Dataset):
-	"""First dataset must be train dataset, which will be used to restrict dataset length"""
+    """Concatenate two datasets for batch loading"""
     def __init__(self, *datasets):
         self.datasets = datasets
         self.len_list = [len(d) for d in self.datasets]

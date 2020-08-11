@@ -1,9 +1,9 @@
 # --- Args ---
 # === Solver ===
 model_type="PyramidNet_ShakeDrop"
-loss_type="None" #"VAT"
+loss_type="VAT" #"VAT"
 dataset1="TONAS" #Train Dataset
-dataset2="None" #"Pop_Rhythm" #Semi-Supervised Dataset
+dataset2="MIR_1K" #"Pop_Rhythm" #Semi-Supervised Dataset
 dataset3="None" #"Pop_Rhythm_Instrumental" #Instrumental Dataset
 dataset4="None" #Validation Dataset
 dataset5="ISMIR2014" #"DALI" #Test Dataset
@@ -20,12 +20,12 @@ k=9
 batch_size=64
 num_workers=1
 # === Trainer ===
-exp_name="TONAS_ISMIR2014_20ep"
+exp_name="TONAS_MIR1K_ISMIR2014_20ep"
 log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"
 entity="austinhsu"
-checkpoint_name="epoch=93.pt"
+checkpoint_name="epoch=19.pt"
 amp_level="O0"
 accumulate_grad_batches=1
 

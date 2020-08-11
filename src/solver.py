@@ -88,21 +88,25 @@ class OnOffsetSolver:
         if self.dataset2 is not None:
             if self.dataset2 == "MIR_1K":
                 self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "mir1k.txt"), "r").read().split('\n')
+            elif self.dataset2 == "MIR_1K_Polyphonic":
+                self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "mir1k_polyphonic.txt"), "r").read().split('\n')
             elif self.dataset2 == "Pop_Rhythm":
                 self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "pop_rhythm.txt"), "r").read().split('\n')
             elif self.dataset2 == "DALI":
                 self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "dali_train.txt"), "r").read().split('\n') + \
                                                 open(os.path.join(self.hparams.meta_path, "dali_valid.txt"), "r").read().split('\n')
             else:
-                raise NotImplementedError("Given dataset2 name %s is not available, please try from [MIR_1K, Pop_Rhythm]."%self.dataset2)
+                raise NotImplementedError("Given dataset2 name %s is not available, please try from [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI]."%self.dataset2)
         else:
             self.semi_supervised_datalist = []
             
         if self.dataset3 is not None:
             if self.dataset3 == "Pop_Rhythm_Instrumental":
                 self.instrumental_datalist = open(os.path.join(self.hparams.meta_path, "pop_rhythm_instrumental.txt"), "r").read().split('\n')
+            elif self.dataset3 == "MIR_1K_Instrumental":
+                self.instrumental_datalist = open(os.path.join(self.hparams.meta_path, "mir1k_instrumental.txt"), "r").read().split('\n')
             else:
-                raise NotImplementedError("Given dataset3 name %s is not available, please try from [Pop_Rhythm_Instrumental]."%self.dataset3)
+                raise NotImplementedError("Given dataset3 name %s is not available, please try from [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]."%self.dataset3)
         else:
             self.instrumental_datalist = [] 
             

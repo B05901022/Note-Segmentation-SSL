@@ -25,7 +25,7 @@ log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"
 entity="austinhsu"
-checkpoint_name="epoch=20"
+checkpoint_name="epoch=20.pt"
 amp_level="O0"
 accumulate_grad_batches=1
 

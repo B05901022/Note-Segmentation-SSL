@@ -18,7 +18,7 @@ def read_file(filename: str) -> (np.array, int):
     """Read files"""
     # --- Load File ---
     sample_rate, audio = scipy.io.wavfile.read(filename)
-    audio = audio.astype(np.float32)
+    audio = audio.astype(np.float32)/32767.0
     if len(audio.shape)==2:
         audio = audio.mean(axis=-1)
         

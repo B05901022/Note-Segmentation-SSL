@@ -310,8 +310,9 @@ class OnOffsetSolver:
         optimizer = torch.optim.AdamW(self.feature_extractor.parameters(), lr=self.hparams.lr)
         
         # --- Scheduler ---
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, self.hparams.max_steps)
-        scheduler = WarmupLR(optimizer, self.hparams.lr_warmup, scheduler)
+        scheduler = None
+        #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, self.hparams.max_steps)
+        #scheduler = WarmupLR(optimizer, self.hparams.lr_warmup, scheduler)
         
         return optimizer, scheduler
     

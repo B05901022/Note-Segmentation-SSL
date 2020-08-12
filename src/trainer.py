@@ -232,7 +232,8 @@ class Trainer:
                 with self.profiler.profile('Optimizer Step'):
                     optimizer.step()
                 optimizer.zero_grad()
-            scheduler.step()
+            if scheduler is not None:
+                scheduler.step()
             
             # --- Progress Bar ---
             tqdm_iterator.set_description_str(

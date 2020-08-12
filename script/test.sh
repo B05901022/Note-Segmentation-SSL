@@ -3,22 +3,22 @@
 model_type="PyramidNet_ShakeDrop"
 loss_type="VAT" #"VAT"
 dataset1="TONAS" #Train Dataset
-dataset2="None" #"Pop_Rhythm" #Semi-Supervised Dataset
+dataset2="MIR_1K" #"Pop_Rhythm" #Semi-Supervised Dataset
 dataset3="None" #"Pop_Rhythm_Instrumental" #Instrumental Dataset
 dataset4="None" #Validation Dataset
 dataset5="ISMIR2014" #"DALI" #Test Dataset
 mix_ratio=0.5
 meta_path="./meta/"
-data_path="/media/austinhsu/AA0A7F590A7F220D/Ubuntu_Backup/MIR_data/"
+data_path="../data/" #"/media/austinhsu/AA0A7F590A7F220D/Ubuntu_Backup/MIR_data/"
 lr=0.0001
 lr_warmup=0 #40000
-max_steps=40080 #240000
+max_steps=100000 #240000
 max_epoch=20
 se=2
 num_feat=9
 k=9
 batch_size=64
-num_workers=1
+num_workers=0 #1
 # === Trainer ===
 exp_name="TONAS_ISMIR2014_20ep"
 log_path="./log/"
@@ -26,7 +26,7 @@ save_path="./checkpoints/"
 project="note_segmentation"
 entity="austinhsu"
 checkpoint_name="epoch=19.pt"
-amp_level="O0"
+amp_level="O1"
 accumulate_grad_batches=1
 
 # --- Flags ---

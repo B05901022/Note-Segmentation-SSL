@@ -44,7 +44,7 @@ accumulate_grad_batches=1
 mkdir -p $log_path
 mkdir -p $save_path
 
-python main.py \
+python -u main.py \
 	--model_type $model_type \
 	--loss_type $loss_type \
 	--dataset1 $dataset1 \

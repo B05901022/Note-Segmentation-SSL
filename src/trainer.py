@@ -206,7 +206,7 @@ class Trainer:
     def per_song_train_loop(self, solver, optimizer, scheduler, update, amp):
         with self.profiler.profile('Get Train DataLoader'):
             train_dataloader = solver.train_dataloader()
-        tqdm_iterator = tqdm(total=len(train_dataloader))
+        tqdm_iterator = tqdm(total=len(train_dataloader), position=0, leave=True)
         train_loss = []
         for batch_idx, batch in self.profiler.profile_iterable(enumerate(train_dataloader), 'Train Loop (per segment)'):
 
@@ -259,7 +259,7 @@ class Trainer:
     def per_song_valid_loop(self, solver, update):
         with self.profiler.profile('Get Validation DataLoader'):
             valid_dataloader = solver.valid_dataloader()
-        tqdm_iterator = tqdm(total=len(valid_dataloader))
+        tqdm_iterator = tqdm(total=len(valid_dataloader), position=0, leave=True)
         outputs = []
         for batch_idx, batch in self.profiler.profile_iterable(enumerate(valid_dataloader), 'Validation Loop (per segment)'):
             
@@ -295,7 +295,9 @@ class Trainer:
             test_dataloader = solver.test_dataloader()
         tqdm_iterator = tqdm(
             desc=f"Song {update:3d}/{self.song_number:3d}",
-            total=len(test_dataloader)
+            total=len(test_dataloader),
+            position=0,
+            leave=True
         )
         outputs = []
         for batch_idx, batch in self.profiler.profile_iterable(enumerate(test_dataloader), 'Test Loop (per segment)'):

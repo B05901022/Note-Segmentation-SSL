@@ -180,7 +180,7 @@ class OnOffsetSolver:
         sdt4_hat = torch.cat((sdt_hat[:,:2], sdt4_hat), dim=1)
         
         # --- supervised loss ---
-        super_loss = self.trLossFunc(sdt_hat[:sup_len], sdt) + self.trLossFunc(sdt4_hat[:sup_len], sdt4)
+        super_loss = self.trLossFunc(sdt_hat[:sup_len], sdt)*6 + self.trLossFunc(sdt4_hat[:sup_len], sdt4)*3
         
         # --- semi-supervised loss ---
         en_loss = 0
@@ -228,7 +228,7 @@ class OnOffsetSolver:
         sdt4_hat = torch.cat((sdt_hat[:,:2], sdt4_hat), dim=1)
         
         # --- supervised loss ---
-        loss = self.trLossFunc(sdt_hat, sdt) + self.trLossFunc(sdt4_hat, sdt4)
+        loss = self.trLossFunc(sdt_hat, sdt)*6 + self.trLossFunc(sdt4_hat, sdt4)*3
         
         # --- Output ---
         tqdm_dict = {'val_loss': loss.item()}

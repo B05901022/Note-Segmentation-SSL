@@ -419,7 +419,7 @@ class OnOffsetSolver:
                 print(f'cuda:{idx} available memory: {memory}')
             self.device = torch.device(f'cuda:{np.argmax(memory_available)}')
             print(f'Selected cuda:{np.argmax(memory_available)} as device')
-            torch.cuda.set_device(np.argmax(memory_available))
+            torch.cuda.set_device(int(np.argmax(memory_available)))
         else:
             self.device = torch.device('cpu')
 

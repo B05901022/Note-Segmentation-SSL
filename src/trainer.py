@@ -68,11 +68,12 @@ class Trainer:
         #self.logger.watch(solver.feature_extractor)
         solver.feature_extractor = solver.feature_extractor.to(self.device)
         optimizer, scheduler = solver.configure_optimizers()
-        solver.feature_extractor, optimizer = amp.initialize(
-            solver.feature_extractor,
-            optimizer,
-            opt_level=self.hparams.amp_level
-        )
+        if self.hparams.use_amp:
+            solver.feature_extractor, optimizer = amp.initialize(
+                solver.feature_extractor,
+                optimizer,
+                opt_level=self.hparams.amp_level
+            )
         optimizer.zero_grad()
         min_loss = 10000.0
         
@@ -116,7 +117,7 @@ class Trainer:
                             solver.best_epoch = self.train_epoch
                             check_point = {
                                 'model': solver.feature_extractor.state_dict(),
-                                'amp': amp.state_dict(),
+                                'amp': amp.state_dict() if self.hparams.use_amp else None,
                                 'hparams': solver.hparams,
                                 'best_epoch': self.train_epoch,
                                 'best_loss': avg_valid_loss
@@ -137,7 +138,7 @@ class Trainer:
                             solver.best_epoch = self.train_epoch
                             check_point = {
                                 'model': solver.feature_extractor.state_dict(),
-                                'amp': amp.state_dict(),
+                                'amp': amp.state_dict() if self.hparams.use_amp else None,
                                 'hparams': solver.hparams,
                                 'best_epoch': self.train_epoch,
                                 'best_loss': avg_train_loss
@@ -224,8 +225,11 @@ class Trainer:
             
             # --- Backward ---
             with self.profiler.profile('Train Backward'):
-                with amp.scale_loss(get_train_output.loss, optimizer) as scaled_loss:
-                    scaled_loss.backward()
+                if self.hparams.use_amp:
+                    with amp.scale_loss(get_train_output.loss, optimizer) as scaled_loss:
+                        scaled_loss.backward()
+                else:
+                    get_train_output.loss.backward()
 
             # --- Update Model ---
             if (self.train_step+1)%self.hparams.accumulate_grad_batches == 0:

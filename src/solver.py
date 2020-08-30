@@ -425,12 +425,14 @@ class OnOffsetSolver:
         checkpoint = torch.load(checkpoint_path)
         self.hparams = checkpoint['hparams']
         self.feature_extractor = self.feature_extractor.to(self.device)
-        self.feature_extractor = amp.initialize(
-            self.feature_extractor,
-            opt_level=self.hparams.amp_level
-        )
+        if self.hparams.use_amp:
+            self.feature_extractor = amp.initialize(
+                self.feature_extractor,
+                opt_level=self.hparams.amp_level
+            )
         self.feature_extractor.load_state_dict(checkpoint['model'])
-        amp.load_state_dict(checkpoint['amp'])
+        if self.hparams.use_amp:
+            amp.load_state_dict(checkpoint['amp'])
 
     #def __call__(self, x):
     #    """To use forward like nn.Module"""

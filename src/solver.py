@@ -419,20 +419,19 @@ class OnOffsetSolver:
                 print(f'cuda:{idx} available memory: {memory}')
             self.device = torch.device(f'cuda:{np.argmax(memory_available)}')
             print(f'Selected cuda:{np.argmax(memory_available)} as device')
+            torch.cuda.set_device(np.argmax(memory_available))
         else:
             self.device = torch.device('cpu')
 
         checkpoint = torch.load(checkpoint_path)
         self.hparams = checkpoint['hparams']
         self.feature_extractor = self.feature_extractor.to(self.device)
-        if self.hparams.use_amp:
-            self.feature_extractor = amp.initialize(
-                self.feature_extractor,
-                opt_level=self.hparams.amp_level
-            )
+        self.feature_extractor = amp.initialize(
+            self.feature_extractor,
+            opt_level=self.hparams.amp_level
+        )
         self.feature_extractor.load_state_dict(checkpoint['model'])
-        if self.hparams.use_amp:
-            amp.load_state_dict(checkpoint['amp'])
+        amp.load_state_dict(checkpoint['amp'])
 
     #def __call__(self, x):
     #    """To use forward like nn.Module"""

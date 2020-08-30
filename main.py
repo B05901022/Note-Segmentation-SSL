@@ -72,7 +72,6 @@ if __name__ == '__main__':
     parser.add_argument('--accumulate_grad_batches', help='Gradient accumulation', default=1, type=int)
     parser.add_argument('--skip_val', help='Skip validation loop, use train loss for best model', action='store_true')
     parser.add_argument('--use_gpu', help='Use gpu for training', action='store_true')
-    parser.add_argument('--use_amp', help='Use automatic mixed precision (amp) for training', action='store_true')
     parser.add_argument('--test_no_offset', help='Test without offset_ratio, recommended for offset-unstable datasets (like DALI)', action='store_true')
     parser.add_argument('--train', help='Run in train mode', action='store_true')
     parser.add_argument('--test', help='Run in test mode', action='store_true')

@@ -9,6 +9,7 @@ from src.utils.tools import AttributeDict
 from src.utils.profiler import SimpleProfiler
 import wandb
 import torch
+import random
 import os
 import numpy as np
 import apex.amp as amp
@@ -29,6 +30,9 @@ class Trainer:
     """
     def __init__(self, hparams):
         self.hparams = hparams
+
+        self.seed = 17
+        self._setup_seed(self.seed)
         
         # --- Logger ---
         self.logger = wandb.init(
@@ -48,7 +52,14 @@ class Trainer:
         self.profiler = SimpleProfiler()
 
         self.best_epoch = None # To check if test right after train or test individually
-        
+    
+    def _setup_seed(self, seed):
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        np.random.seed(seed)
+        random.seed(seed)
+        # torch.backends.cudnn.deterministic = True
+
     def fit(self, solver):
         """Does training training loop."""
         
@@ -60,6 +71,7 @@ class Trainer:
                 print(f'cuda:{idx} available memory: {memory}')
             self.device = torch.device(f'cuda:{np.argmax(memory_available)}')
             print(f'Selected cuda:{np.argmax(memory_available)} as device')
+            torch.cuda.set_device(np.argmax(memory_available))
         else:
             self.device = torch.device('cpu')
         solver.device = self.device
@@ -68,12 +80,11 @@ class Trainer:
         #self.logger.watch(solver.feature_extractor)
         solver.feature_extractor = solver.feature_extractor.to(self.device)
         optimizer, scheduler = solver.configure_optimizers()
-        if self.hparams.use_amp:
-            solver.feature_extractor, optimizer = amp.initialize(
-                solver.feature_extractor,
-                optimizer,
-                opt_level=self.hparams.amp_level
-            )
+        solver.feature_extractor, optimizer = amp.initialize(
+            solver.feature_extractor,
+            optimizer,
+            opt_level=self.hparams.amp_level
+        )
         optimizer.zero_grad()
         min_loss = 10000.0
         
@@ -117,7 +128,7 @@ class Trainer:
                             solver.best_epoch = self.train_epoch
                             check_point = {
                                 'model': solver.feature_extractor.state_dict(),
-                                'amp': amp.state_dict() if self.hparams.use_amp else None,
+                                'amp': amp.state_dict(),
                                 'hparams': solver.hparams,
                                 'best_epoch': self.train_epoch,
                                 'best_loss': avg_valid_loss
@@ -138,7 +149,7 @@ class Trainer:
                             solver.best_epoch = self.train_epoch
                             check_point = {
                                 'model': solver.feature_extractor.state_dict(),
-                                'amp': amp.state_dict() if self.hparams.use_amp else None,
+                                'amp': amp.state_dict(),
                                 'hparams': solver.hparams,
                                 'best_epoch': self.train_epoch,
                                 'best_loss': avg_train_loss
@@ -225,11 +236,8 @@ class Trainer:
             
             # --- Backward ---
             with self.profiler.profile('Train Backward'):
-                if self.hparams.use_amp:
-                    with amp.scale_loss(get_train_output.loss, optimizer) as scaled_loss:
-                        scaled_loss.backward()
-                else:
-                    get_train_output.loss.backward()
+                with amp.scale_loss(get_train_output.loss, optimizer) as scaled_loss:
+                    scaled_loss.backward()
 
             # --- Update Model ---
             if (self.train_step+1)%self.hparams.accumulate_grad_batches == 0:

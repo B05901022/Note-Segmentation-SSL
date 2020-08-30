@@ -36,7 +36,6 @@ accumulate_grad_batches=1
 #--use_cp
 #--skip_val
 #--use_gpu
-#--use_amp
 #--test_no_offset
 #--train
 #--test

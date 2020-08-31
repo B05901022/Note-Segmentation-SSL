@@ -68,22 +68,23 @@ class TrainDataset(torch.utils.data.Dataset):
         
         # --- Transform ---
         self.transform = transform_method(transform_dict)
-        self._DataPreprocess()
         
     def __getitem__(self, index):
         frame_feat = self.feature[:, :, index:index+self.window_size]
+        frame_feat = self._DataPreprocess(frame_feat)
         if not self.semi:
             frame_sdt = self.sdt[index].float()
             return frame_feat, frame_sdt
         else:
             return frame_feat
     
-    def _DataPreprocess(self):
+    def _DataPreprocess(self, feature):
         # --- Normalize (for mask) ---
-        self.feature = (self.feature-torch.mean(self.feature))/(torch.std(self.feature)+1e-8)
+        feature = (feature-torch.mean(feature))/(torch.std(feature)+1e-8)
         
         # --- Augment ---
-        self.feature = self.transform(self.feature.unsqueeze(0)).squeeze(0)
+        feature = self.transform(feature.unsqueeze(0)).squeeze(0)
+        return feature
     
     def __len__(self):
         return self.len

@@ -130,9 +130,18 @@ class EvalDataset(torch.utils.data.Dataset):
             self.feature,
             torch.zeros((num_feat,1566//num_feat,k))
             ], dim=-1)
+
+    def _DataPreprocess(self, feature):
+        # --- Normalize (for mask) ---
+        feature = (feature-torch.mean(feature))/(torch.std(feature)+1e-8)
+        
+        # --- Augment ---
+        # feature = self.transform(feature.unsqueeze(0)).squeeze(0)
+        return feature
         
     def __getitem__(self, index):
         frame_feat = self.feature[:, :, index:index+self.window_size]
+        frame_feat = self._DataPreprocess(frame_feat)
         frame_sdt = self.sdt[index].float()
         return frame_feat, frame_sdt
     

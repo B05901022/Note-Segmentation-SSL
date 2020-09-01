@@ -79,7 +79,7 @@ class TrainDataset(torch.utils.data.Dataset):
         else:
             return frame_feat
     
-    def _DataPreprocess(self, feature):
+    def _DataPreprocess(self):
         # --- Normalize (for mask) ---
         self.feature = (self.feature-torch.mean(self.feature))/(torch.std(self.feature)+1e-8)
         
@@ -133,7 +133,7 @@ class EvalDataset(torch.utils.data.Dataset):
 
         self._DataPreprocess()
 
-    def _DataPreprocess(self, feature):
+    def _DataPreprocess(self):
         # --- Normalize (for mask) ---
         self.feature = (self.feature-torch.mean(self.feature))/(torch.std(self.feature)+1e-8)
         

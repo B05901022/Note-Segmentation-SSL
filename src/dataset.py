@@ -68,6 +68,7 @@ class TrainDataset(torch.utils.data.Dataset):
         
         # --- Transform ---
         self.transform = transform_method(transform_dict)
+        self._DataPreprocess()
         
     def __getitem__(self, index):
         frame_feat = self.feature[:, :, index:index+self.window_size]
@@ -80,11 +81,10 @@ class TrainDataset(torch.utils.data.Dataset):
     
     def _DataPreprocess(self, feature):
         # --- Normalize (for mask) ---
-        feature = (feature-torch.mean(feature))/(torch.std(feature)+1e-8)
+        self.feature = (self.feature-torch.mean(self.feature))/(torch.std(self.feature)+1e-8)
         
         # --- Augment ---
-        feature = self.transform(feature.unsqueeze(0)).squeeze(0)
-        return feature
+        # self.feature = self.transform(self.feature.unsqueeze(0)).squeeze(0)
     
     def __len__(self):
         return self.len
@@ -131,13 +131,14 @@ class EvalDataset(torch.utils.data.Dataset):
             torch.zeros((num_feat,1566//num_feat,k))
             ], dim=-1)
 
+        self._DataPreprocess()
+
     def _DataPreprocess(self, feature):
         # --- Normalize (for mask) ---
-        feature = (feature-torch.mean(feature))/(torch.std(feature)+1e-8)
+        self.feature = (self.feature-torch.mean(self.feature))/(torch.std(self.feature)+1e-8)
         
         # --- Augment ---
-        # feature = self.transform(feature.unsqueeze(0)).squeeze(0)
-        return feature
+        # self.feature = self.transform(self.feature.unsqueeze(0)).squeeze(0)
         
     def __getitem__(self, index):
         frame_feat = self.feature[:, :, index:index+self.window_size]

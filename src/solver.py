@@ -174,6 +174,10 @@ class OnOffsetSolver:
         sdt4 = torch.max(sdt[:,3], sdt[:,5]).view(-1, 1)
         sdt4 = torch.cat((sdt[:,:2], sdt4), dim=1)
         
+        # --- Data Augmentation ---
+        with torch.no_grad():
+            feat = self.augment(feat)
+
         sdt_hat = self.forward(feat)
         sdt_hat  = F.softmax(sdt_hat.view(3,-1,2), dim=2).view(-1,6)
         sdt4_hat  = torch.max(sdt_hat[:,3], sdt_hat[:,5]).view(-1,1)
@@ -358,6 +362,8 @@ class OnOffsetSolver:
                 num_feat=self.hparams.num_feat, k=self.hparams.k
                 )
             
+            self.augment = supervised_song_dataset.transform
+
             if self.dataset2 is not None:
                 semi_supervised_song_name = self.song_dict['semi_supervised'].popleft()
                 self.song_dict['semi_supervised'].extend([semi_supervised_song_name])

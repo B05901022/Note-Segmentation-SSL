@@ -72,6 +72,7 @@ class TrainDataset(torch.utils.data.Dataset):
         
     def __getitem__(self, index):
         frame_feat = self.feature[:, :, index:index+self.window_size]
+        frame_feat = self.transform(frame_feat.unsqueeze(0)).squeeze(0)
         if not self.semi:
             frame_sdt = self.sdt[index].float()
             return frame_feat, frame_sdt

@@ -72,7 +72,6 @@ class TrainDataset(torch.utils.data.Dataset):
         
     def __getitem__(self, index):
         frame_feat = self.feature[:, :, index:index+self.window_size]
-        frame_feat = self._DataPreprocess(frame_feat)
         if not self.semi:
             frame_sdt = self.sdt[index].float()
             return frame_feat, frame_sdt
@@ -142,7 +141,6 @@ class EvalDataset(torch.utils.data.Dataset):
         
     def __getitem__(self, index):
         frame_feat = self.feature[:, :, index:index+self.window_size]
-        frame_feat = self._DataPreprocess(frame_feat)
         frame_sdt = self.sdt[index].float()
         return frame_feat, frame_sdt
     

@@ -80,7 +80,7 @@ class CutOut(object):
         
         mask = torch.from_numpy(mask)
         mask = mask.expand_as(img)
-        img  = img * mask
+        img  = img * mask.type_as(img)
         
         return img
     
@@ -116,7 +116,7 @@ class PitchShifting(object):
     def __call__(self, img):
         f_range   = img.size(2)
         shift     = np.random.randint(-self.shift_range, self.shift_range+1)
-        shift_img = torch.zeros(img.size())
+        shift_img = torch.zeros(img.size()).type_as(img)
         for f in range(f_range):
             if f-shift >= 0 and f-shift < f_range:
                 shift_img[:,:, f] = img[:,:, f-shift]
@@ -140,11 +140,11 @@ class AddNoise(object):
             
             for f in range(f_range):
                 gen_noise[:,:,f] = np.random.uniform(-np.sqrt(3)*f/f_range, np.sqrt(3)*f/f_range, size=img.size(3))
-            gen_noise = torch.from_numpy(gen_noise).float()
+            gen_noise = torch.from_numpy(gen_noise).float().type_as(img)
             return img + self.noise_size * gen_noise
         elif self.noise_type == 'white':
             gen_noise = np.random.uniform(-np.sqrt(3), np.sqrt(3), size=img.size())
-            gen_noise = torch.from_numpy(gen_noise).float()
+            gen_noise = torch.from_numpy(gen_noise).float().type_as(img)
             return img + self.noise_size*gen_noise
 
 class EasyClipping(object):

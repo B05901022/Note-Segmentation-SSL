@@ -13,19 +13,13 @@ from src.utils.feature_extraction_cp import full_flow as cp_full_flow
 from src.utils.feature_extraction import full_flow as np_full_flow
 from src.utils.feature_extraction_cp import test_flow as cp_test_flow
 from src.utils.feature_extraction import test_flow as np_test_flow
-from src.utils.audio_augment import transform_method
 
 class TrainDataset(torch.utils.data.Dataset):
     
     def __init__(self, data_path, dataset1, dataset2, filename1, filename2, mix_ratio,
                  device, use_cp=True, semi=False,
-                 num_feat=9, k=9,
-                 transform_dict={'cutout'    :False,
-                                 'freq_mask' :{'freq_mask_param':100},
-                                 'time_mask' :False,
-                                 'pitchshift':{'shift_range':48}, 
-                                 'addnoise'  :False,
-                }):
+                 num_feat=9, k=9
+                 ):
 
         # --- Args ---
         self.window_size = 2*k+1
@@ -65,26 +59,14 @@ class TrainDataset(torch.utils.data.Dataset):
             self.feature,
             torch.zeros((num_feat,1566//num_feat,k))
             ], dim=-1)
-        
-        # --- Transform ---
-        self.transform = transform_method(transform_dict)
-        self._DataPreprocess()
-        
+                
     def __getitem__(self, index):
         frame_feat = self.feature[:, :, index:index+self.window_size]
-        frame_feat = self.transform(frame_feat.unsqueeze(0)).squeeze(0)
         if not self.semi:
             frame_sdt = self.sdt[index].float()
             return frame_feat, frame_sdt
         else:
             return frame_feat
-    
-    def _DataPreprocess(self):
-        # --- Normalize (for mask) ---
-        self.feature = (self.feature-torch.mean(self.feature))/(torch.std(self.feature)+1e-8)
-        
-        # --- Augment ---
-        # self.feature = self.transform(self.feature.unsqueeze(0)).squeeze(0)
     
     def __len__(self):
         return self.len
@@ -130,15 +112,6 @@ class EvalDataset(torch.utils.data.Dataset):
             self.feature,
             torch.zeros((num_feat,1566//num_feat,k))
             ], dim=-1)
-
-        self._DataPreprocess()
-
-    def _DataPreprocess(self):
-        # --- Normalize (for mask) ---
-        self.feature = (self.feature-torch.mean(self.feature))/(torch.std(self.feature)+1e-8)
-        
-        # --- Augment ---
-        # self.feature = self.transform(self.feature.unsqueeze(0)).squeeze(0)
         
     def __getitem__(self, index):
         frame_feat = self.feature[:, :, index:index+self.window_size]

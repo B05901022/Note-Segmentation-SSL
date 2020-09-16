@@ -186,8 +186,9 @@ class OnOffsetSolver:
         sdt4 = torch.cat((sdt[:,:2], sdt4), dim=1)
 
         # --- data augmentation/normalization ---
-        feat = self.data_normalize(feat)
-        feat = self.data_aug(feat)
+        with torch.no_grad():
+            #feat = self.data_normalize(feat)
+            feat = self.data_aug(feat)
         
         sdt_hat = self.forward(feat)
         sdt_hat  = F.softmax(sdt_hat.view(3,-1,2), dim=2).view(-1,6)
@@ -238,7 +239,10 @@ class OnOffsetSolver:
         sdt4 = torch.cat((sdt[:,:2], sdt4), dim=1)
         
         # --- data normalization ---
-        #feat = self.data_normalize(feat)
+# =============================================================================
+#         with torch.no_grad():
+#             feat = self.data_normalize(feat)
+# =============================================================================
         
         sdt_hat = self.forward(feat)
         sdt_hat  = F.softmax(sdt_hat.view(3,-1,2), dim=2).view(-1,6)
@@ -273,7 +277,10 @@ class OnOffsetSolver:
         feat, sdt = batch
         
         # --- data normalization ---
-        #feat = self.data_normalize(feat)
+# =============================================================================
+#         with torch.no_grad():
+#             feat = self.data_normalize(feat)
+# =============================================================================
         
         sdt_hat = self.forward(feat)
         sdt_hat  = F.softmax(sdt_hat.view(3,-1,2), dim=2).view(-1,6)

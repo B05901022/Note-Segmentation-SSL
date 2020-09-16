@@ -186,7 +186,7 @@ class OnOffsetSolver:
         sdt4 = torch.cat((sdt[:,:2], sdt4), dim=1)
 
         # --- data augmentation/normalization ---
-        #feat = self.data_normalize(feat)
+        feat = self.data_normalize(feat)
         feat = self.data_aug(feat)
         
         sdt_hat = self.forward(feat)

@@ -20,7 +20,7 @@ k=9
 batch_size=64
 num_workers=0 #1
 # === Trainer ===
-exp_name="Training_00"
+exp_name="Training_01"
 log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"

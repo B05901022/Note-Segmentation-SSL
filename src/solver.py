@@ -187,7 +187,7 @@ class OnOffsetSolver:
 
         # --- data augmentation/normalization ---
         with torch.no_grad():
-            #feat = self.data_normalize(feat)
+            feat = self.data_normalize(feat)
             feat = self.data_aug(feat)
         
         sdt_hat = self.forward(feat)

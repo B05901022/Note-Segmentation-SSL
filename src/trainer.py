@@ -30,7 +30,8 @@ class Trainer:
     """
     def __init__(self, hparams):
         self.hparams = hparams
-
+        
+        # --- Random Seed ---
         self.seed = 17
         self._setup_seed(self.seed)
         
@@ -54,6 +55,8 @@ class Trainer:
         self.best_epoch = None # To check if test right after train or test individually
     
     def _setup_seed(self, seed):
+        """Set random seed."""
+        
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
         np.random.seed(seed)
@@ -77,7 +80,7 @@ class Trainer:
         solver.device = self.device
 
         # --- Init ---
-        #self.logger.watch(solver.feature_extractor)
+        # self.logger.watch(solver.feature_extractor)
         solver.feature_extractor = solver.feature_extractor.to(self.device)
         optimizer, scheduler = solver.configure_optimizers()
         solver.feature_extractor, optimizer = amp.initialize(

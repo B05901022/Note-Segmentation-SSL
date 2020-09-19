@@ -10,7 +10,7 @@ dataset5="ISMIR2014" #"DALI" #Test Dataset
 mix_ratio=0.5
 meta_path="./meta/"
 data_path="../data/" #"/media/austinhsu/AA0A7F590A7F220D/Ubuntu_Backup/MIR_data/"
-lr=0.0001
+lr=0.001
 lr_warmup=0 #40000
 max_steps=100000 #240000
 max_epoch=20
@@ -20,7 +20,7 @@ k=9
 batch_size=64
 num_workers=0 #1
 # === Trainer ===
-exp_name="Training_03"
+exp_name="Training_00"
 log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"

@@ -13,6 +13,7 @@ from src.utils.feature_extraction_cp import full_flow as cp_full_flow
 from src.utils.feature_extraction import full_flow as np_full_flow
 from src.utils.feature_extraction_cp import test_flow as cp_test_flow
 from src.utils.feature_extraction import test_flow as np_test_flow
+from src.utils.audio_augment import transform_method
 
 class TrainDataset(torch.utils.data.Dataset):
     
@@ -59,7 +60,18 @@ class TrainDataset(torch.utils.data.Dataset):
             self.feature,
             torch.zeros((num_feat,1566//num_feat,k))
             ], dim=-1)
-                
+        
+        # --- Transform ---
+        self.transform_dict={'cutout'    :False,
+                             'freq_mask' :{'freq_mask_param':100},
+                             'time_mask' :False,
+                             'pitchshift':{'shift_range':48}, 
+                             'addnoise'  :False,
+                             }
+        self.data_aug = transform_method(self.transform_dict)
+        self.data_normalize = lambda x: (x-torch.mean(x))/(torch.std(x)+1e-8)
+        self._DataPreprocess()
+        
     def __getitem__(self, index):
         frame_feat = self.feature[:, :, index:index+self.window_size]
         if not self.semi:
@@ -67,6 +79,13 @@ class TrainDataset(torch.utils.data.Dataset):
             return frame_feat, frame_sdt
         else:
             return frame_feat
+    
+    def _DataPreprocess(self):
+        # --- Normalize ---
+        # self.feature = self.data_normalize(self.feature)
+        
+        # --- Augment ---
+        self.feature = self.data_aug(self.feature.unsqueeze(0)).squeeze(0)
     
     def __len__(self):
         return self.len
@@ -113,10 +132,18 @@ class EvalDataset(torch.utils.data.Dataset):
             torch.zeros((num_feat,1566//num_feat,k))
             ], dim=-1)
         
+        # --- Transform ---
+        self.data_normalize = lambda x: (x-torch.mean(x))/(torch.std(x)+1e-8)
+        self._DataPreprocess()
+        
     def __getitem__(self, index):
         frame_feat = self.feature[:, :, index:index+self.window_size]
         frame_sdt = self.sdt[index].float()
         return frame_feat, frame_sdt
+    
+    # def _DataPreprocess(self):
+        # --- Normalize ---
+        # self.feature = self.data_normalize(self.feature)
     
     def __len__(self):
         return self.len

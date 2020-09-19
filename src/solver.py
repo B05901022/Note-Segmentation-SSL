@@ -55,16 +55,6 @@ class OnOffsetSolver:
         self.best_epoch = 0
         self.test_no_offset = False
         
-        # --- Transform ---
-        self.transform_dict={'cutout'    :False,
-                             'freq_mask' :{'freq_mask_param':100},
-                             'time_mask' :False,
-                             'pitchshift':{'shift_range':48}, 
-                             'addnoise'  :False,
-                             }
-        self.data_aug = transform_method(self.transform_dict)
-        self.data_normalize = lambda x: (x-torch.mean(x))/(torch.std(x)+1e-8)
-            
         # --- Build Model/Loss ---
         self.__build_model(model_type=self.hparams.model_type)
         self.__build_loss()
@@ -184,11 +174,6 @@ class OnOffsetSolver:
         
         sdt4 = torch.max(sdt[:,3], sdt[:,5]).view(-1, 1)
         sdt4 = torch.cat((sdt[:,:2], sdt4), dim=1)
-
-        # --- data augmentation/normalization ---
-        with torch.no_grad():
-            feat = self.data_normalize(feat)
-            feat = self.data_aug(feat)
         
         sdt_hat = self.forward(feat)
         sdt_hat  = F.softmax(sdt_hat.view(3,-1,2), dim=2).view(-1,6)
@@ -238,12 +223,6 @@ class OnOffsetSolver:
         sdt4 = torch.max(sdt[:,3], sdt[:,5]).view(-1, 1)
         sdt4 = torch.cat((sdt[:,:2], sdt4), dim=1)
         
-        # --- data normalization ---
-# =============================================================================
-#         with torch.no_grad():
-#             feat = self.data_normalize(feat)
-# =============================================================================
-        
         sdt_hat = self.forward(feat)
         sdt_hat  = F.softmax(sdt_hat.view(3,-1,2), dim=2).view(-1,6)
         sdt4_hat  = torch.max(sdt_hat[:,3], sdt_hat[:,5]).view(-1,1)
@@ -275,12 +254,6 @@ class OnOffsetSolver:
     def test_step(self, batch, batch_idx):
         # --- data collection ---
         feat, sdt = batch
-        
-        # --- data normalization ---
-# =============================================================================
-#         with torch.no_grad():
-#             feat = self.data_normalize(feat)
-# =============================================================================
         
         sdt_hat = self.forward(feat)
         sdt_hat  = F.softmax(sdt_hat.view(3,-1,2), dim=2).view(-1,6)

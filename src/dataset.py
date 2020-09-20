@@ -82,7 +82,7 @@ class TrainDataset(torch.utils.data.Dataset):
     
     def _DataPreprocess(self):
         # --- Normalize ---
-        # self.feature = self.data_normalize(self.feature)
+        self.feature = self.data_normalize(self.feature)
         
         # --- Augment ---
         self.feature = self.data_aug(self.feature.unsqueeze(0)).squeeze(0)

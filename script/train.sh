@@ -1,7 +1,7 @@
 # --- Args ---
 # === Solver ===
 model_type="PyramidNet_ShakeDrop"
-loss_type="None" #[None, VAT, VATo]
+loss_type="VAT" #[None, VAT, VATo]
 dataset1="TONAS" #Train Dataset, [TONAS, DALI]
 dataset2="MIR_1K" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI]
 dataset3="None" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]

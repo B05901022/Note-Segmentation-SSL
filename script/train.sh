@@ -1,9 +1,9 @@
 # --- Args ---
 # === Solver ===
 model_type="PyramidNet_ShakeDrop"
-loss_type="VAT" #[None, VAT, VATo]
+loss_type="None" #[None, VAT, VATo]
 dataset1="TONAS" #Train Dataset, [TONAS, DALI]
-dataset2="MIR_1K" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI]
+dataset2="None" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI]
 dataset3="None" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
 dataset4="None" #Validation Dataset, [DALI]
 dataset5="ISMIR2014" #Test Dataset, [DALI, ISMIR2014]
@@ -18,14 +18,14 @@ se=2
 num_feat=9
 k=9
 batch_size=64
-num_workers=0 #1
+num_workers=1
 # === Trainer ===
-exp_name="Training_01"
+exp_name="Training_00"
 log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"
 entity="austinhsu"
-checkpoint_name="epoch=20.pt"
+checkpoint_name="epoch=19.pt"
 amp_level="O1"
 accumulate_grad_batches=1
 

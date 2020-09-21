@@ -134,16 +134,16 @@ class EvalDataset(torch.utils.data.Dataset):
         
         # --- Transform ---
         self.data_normalize = lambda x: (x-torch.mean(x))/(torch.std(x)+1e-8)
-        #self._DataPreprocess()
+        self._DataPreprocess()
         
     def __getitem__(self, index):
         frame_feat = self.feature[:, :, index:index+self.window_size]
         frame_sdt = self.sdt[index].float()
         return frame_feat, frame_sdt
     
-    # def _DataPreprocess(self):
+    def _DataPreprocess(self):
         # --- Normalize ---
-        # self.feature = self.data_normalize(self.feature)
+        self.feature = self.data_normalize(self.feature)
     
     def __len__(self):
         return self.len

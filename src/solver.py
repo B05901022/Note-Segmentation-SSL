@@ -81,10 +81,10 @@ class OnOffsetSolver:
             self.supervised_datalist = open(os.path.join(self.hparams.meta_path, "tonas.txt"), "r").read().split('\n')
             #if self.hparams.val_check_interval > 0:
             #    raise ValueError("For TONAS training, validation is not done during training.")
-        elif self.dataset1 == "DALI":
+        elif self.dataset1 == "DALI_train":
             self.supervised_datalist = open(os.path.join(self.hparams.meta_path, "dali_train.txt"), "r").read().split('\n')
         else:
-            raise NotImplementedError("Given dataset1 name %s is not available, please try from [TONAS, DALI]."%self.dataset1)      
+            raise NotImplementedError("Given dataset1 name %s is not available, please try from [TONAS, DALI_train]."%self.dataset1)      
         
         if self.dataset2 is not None:
             if self.dataset2 == "MIR_1K":
@@ -93,11 +93,11 @@ class OnOffsetSolver:
                 self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "mir1k_polyphonic.txt"), "r").read().split('\n')
             elif self.dataset2 == "Pop_Rhythm":
                 self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "pop_rhythm.txt"), "r").read().split('\n')
-            elif self.dataset2 == "DALI":
-                self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "dali_train.txt"), "r").read().split('\n') + \
-                                                open(os.path.join(self.hparams.meta_path, "dali_valid.txt"), "r").read().split('\n')
+            elif self.dataset2 == "DALI_train":
+                self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "dali_train.txt"), "r").read().split('\n') # + \
+                                                # open(os.path.join(self.hparams.meta_path, "dali_valid.txt"), "r").read().split('\n')
             else:
-                raise NotImplementedError("Given dataset2 name %s is not available, please try from [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI]."%self.dataset2)
+                raise NotImplementedError("Given dataset2 name %s is not available, please try from [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI_train]."%self.dataset2)
         else:
             self.semi_supervised_datalist = []
             
@@ -112,20 +112,20 @@ class OnOffsetSolver:
             self.instrumental_datalist = [] 
             
         if self.dataset4 is not None:
-            if self.dataset4 == "DALI":
+            if self.dataset4 == "DALI_valid":
                 self.valid_datalist = open(os.path.join(self.hparams.meta_path, "dali_valid.txt"), "r").read().split('\n')
             else:
-                raise NotImplementedError("Given dataset4 name %s is not available, please try from [DALI]."%self.dataset4)
+                raise NotImplementedError("Given dataset4 name %s is not available, please try from [DALI_valid]."%self.dataset4)
         else:
             self.valid_datalist = []
         
         if self.dataset5 is not None:
-            if self.dataset5 == "DALI":
+            if self.dataset5 == "DALI_test":
                 self.test_datalist = open(os.path.join(self.hparams.meta_path, "dali_test.txt"), "r").read().split('\n')
             elif self.dataset5 == "ISMIR2014":
                 self.test_datalist = open(os.path.join(self.hparams.meta_path, "ismir_2014.txt"), "r").read().split('\n')
             else:
-                raise NotImplementedError("Given dataset5 name %s is not available, please try from [DALI, ISMIR2014]."%self.dataset5)
+                raise NotImplementedError("Given dataset5 name %s is not available, please try from [DALI_test, ISMIR2014]."%self.dataset5)
         else:
             self.test_datalist = []
     

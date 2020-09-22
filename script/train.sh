@@ -2,11 +2,11 @@
 # === Solver ===
 model_type="PyramidNet_ShakeDrop"
 loss_type="None" #[None, VAT, VATo]
-dataset1="DALI" #Train Dataset, [TONAS, DALI]
-dataset2="None" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI]
+dataset1="DALI_train" #Train Dataset, [TONAS, DALI_train]
+dataset2="None" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI_train]
 dataset3="None" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
-dataset4="DALI" #Validation Dataset, [DALI]
-dataset5="DALI" #Test Dataset, [DALI, ISMIR2014]
+dataset4="DALI_valid" #Validation Dataset, [DALI_valid]
+dataset5="DALI_test" #Test Dataset, [DALI_test, ISMIR2014]
 mix_ratio=0.5
 meta_path="./meta/"
 data_path="../data/" #"/media/austinhsu/AA0A7F590A7F220D/Ubuntu_Backup/MIR_data/"

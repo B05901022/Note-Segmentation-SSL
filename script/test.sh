@@ -1,12 +1,12 @@
 # --- Args ---
 # === Solver ===
 model_type="PyramidNet_ShakeDrop"
-loss_type="VATo" #[None, VAT, VATo]
-dataset1="TONAS" #Train Dataset, [TONAS, DALI]
-dataset2="MIR_1K" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI]
+loss_type="None" #[None, VAT, VATo]
+dataset1="DALI" #Train Dataset, [TONAS, DALI]
+dataset2="None" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI]
 dataset3="None" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
-dataset4="None" #Validation Dataset, [DALI]
-dataset5="ISMIR2014" #Test Dataset, [DALI, ISMIR2014]
+dataset4="DALI" #Validation Dataset, [DALI]
+dataset5="DALI" #Test Dataset, [DALI, ISMIR2014]
 mix_ratio=0.5
 meta_path="./meta/"
 data_path="../data/" #"/media/austinhsu/AA0A7F590A7F220D/Ubuntu_Backup/MIR_data/"
@@ -20,7 +20,7 @@ k=9
 batch_size=64
 num_workers=0 #1
 # === Trainer ===
-exp_name="Training_02"
+exp_name="Training_03"
 log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"

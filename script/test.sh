@@ -2,9 +2,9 @@
 # === Solver ===
 model_type="PyramidNet_ShakeDrop"
 loss_type="None" #[None, VAT, VATo]
-dataset1="DALI_train" #Train Dataset, [TONAS, DALI_train]
+dataset1="TONAS" #Train Dataset, [TONAS, DALI_train]
 dataset2="None" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI_train]
-dataset3="None" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
+dataset3="MIR_1K_Instrumental" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
 dataset4="DALI_valid" #Validation Dataset, [DALI_valid]
 dataset5="DALI_test" #Test Dataset, [DALI_test, ISMIR2014]
 mix_ratio=0.5
@@ -20,7 +20,7 @@ k=9
 batch_size=64
 num_workers=0 #1
 # === Trainer ===
-exp_name="Training_03"
+exp_name="Training_04"
 log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"

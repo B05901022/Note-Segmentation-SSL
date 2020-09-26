@@ -227,10 +227,10 @@ class Trainer:
 
             # --- To Device ---
             if solver.dataset2 is not None:
-                batch[0] = [i.to(self.device) for i in batch[0]] # Train dataset
+                batch[0] = [batch[0][0].to(self.device), batch[0][1].to(self.device, non_blocking=True)] # Train dataset
                 batch[1] = batch[1].to(self.device) # Semi dataset
             else:
-                batch = [i.to(self.device) for i in batch] # Train dataset
+                batch = [batch[0].to(self.device), batch[1].to(self.device, non_blocking=True)] # Train dataset
 
             # --- Train Step ---
             with self.profiler.profile('Train Forward'):

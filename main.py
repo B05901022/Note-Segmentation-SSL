@@ -45,6 +45,8 @@ if __name__ == '__main__':
     parser.add_argument('--dataset4', help='Validation dataset', default='None', type=str)
     parser.add_argument('--dataset5', help='Test dataset', default='DALI', type=str)
     parser.add_argument('--mix_ratio', help='Ratio of instrumental dataset to mix with supervised dataset', default=0.5, type=float)
+    parser.add_argument('--lt_on_smooth', help='Use longtail function to smoothen onset', action='store_true')
+    parser.add_argument('--lt_off_smooth', help='Use longtail function to smoothen offset', action='store_true')
     parser.add_argument('--meta_path', help='Datapath to meta files', default='./meta/', type=str)
     parser.add_argument('--data_path', help='Datapath to wav files', default='../data/', type=str)
     parser.add_argument('--lr', help='Learning rate', default=0.0001, type=float)

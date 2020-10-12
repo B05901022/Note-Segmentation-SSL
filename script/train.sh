@@ -1,10 +1,10 @@
 # --- Args ---
 # === Solver ===
 model_type="PyramidNet_ShakeDrop"
-loss_type="VAT" #[None, VAT, VATo]
-dataset1="TONAS" #Train Dataset, [TONAS, DALI_train]
-dataset2="DALI_train" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI_train]
-dataset3="MIR_1K_Instrumental" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
+loss_type="None" #[None, VAT, VATo]
+dataset1="DALI_train" #Train Dataset, [TONAS, DALI_train]
+dataset2="None" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI_train]
+dataset3="None" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
 dataset4="None" #Validation Dataset, [DALI_valid]
 dataset5="DALI_test" #Test Dataset, [DALI_test, ISMIR2014]
 mix_ratio=0.5
@@ -20,7 +20,7 @@ k=9
 batch_size=64
 num_workers=1
 # === Trainer ===
-exp_name="Training_19"
+exp_name="Training_20"
 log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"
@@ -30,6 +30,8 @@ amp_level="O1"
 accumulate_grad_batches=1
 
 # --- Flags ---
+#--lt_on_smooth
+#--lt_off_smooth
 #--use_ground_truth
 #--shuffle
 #--pin_memory
@@ -72,6 +74,7 @@ python -u main.py \
 	--checkpoint_name $checkpoint_name \
 	--amp_level $amp_level \
 	--accumulate_grad_batches $accumulate_grad_batches \
+	--lt_off_smooth \
 	--shuffle \
 	--pin_memory \
 	--use_cp \

@@ -21,6 +21,7 @@ import os
 import mir_eval
 import apex.amp as amp
 import numpy as np
+import argparse
 from collections import OrderedDict, deque
 
 class OnOffsetSolver:
@@ -355,6 +356,7 @@ class OnOffsetSolver:
             supervised_song_dataset = TrainDataset(
                 data_path=self.hparams.data_path, dataset1=self.dataset1, dataset2=self.dataset3,
                 filename1=supervised_song_name, filename2=instrumental_song_name, mix_ratio=self.hparams.mix_ratio,
+                longtail_args={'on_smooth': self.hparams.lt_on_smooth, 'off_smooth': self.hparams.lt_off_smooth},
                 device=self.device, use_cp=(self.dataset1!='DALI') and self.hparams.use_cp, semi=False,
                 num_feat=self.hparams.num_feat, k=self.hparams.k
                 )
@@ -425,7 +427,7 @@ class OnOffsetSolver:
             self.device = torch.device('cpu')
 
         checkpoint = torch.load(checkpoint_path)
-        self.hparams = checkpoint['hparams']
+        #self.hparams = argparse.Namespace(**{**checkpoint['hparams'], **self.hparams.__dict__})
         self.feature_extractor = self.feature_extractor.to(self.device)
         self.feature_extractor = amp.initialize(
             self.feature_extractor,

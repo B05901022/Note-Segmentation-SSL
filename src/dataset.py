@@ -14,11 +14,13 @@ from src.utils.feature_extraction import full_flow as np_full_flow
 from src.utils.feature_extraction_cp import test_flow as cp_test_flow
 from src.utils.feature_extraction import test_flow as np_test_flow
 from src.utils.audio_augment import transform_method
+from src.utils.longtail import longtail
 
 class TrainDataset(torch.utils.data.Dataset):
     
     def __init__(self, data_path, dataset1, dataset2, filename1, filename2, mix_ratio,
                  device, use_cp=True, semi=False,
+                 longtail_args={'use_longtail': False, 'on_smooth': False, 'off_smooth': False},
                  num_feat=9, k=9
                  ):
 
@@ -52,6 +54,8 @@ class TrainDataset(torch.utils.data.Dataset):
         self.len = self.feature.shape[-1]
         if not self.semi:
             self.sdt = np.load(os.path.join(data_path, dataset1, 'sdt', filename1+'_sdt.npy'))
+            if longtail_args['on_smooth'] or longtail_args['off_smooth']: 
+                self.sdt = longtail(self.sdt, on_smooth=longtail_args['on_smooth'], off_smooth=longtail_args['off_smooth'])
             self.sdt = torch.from_numpy(self.sdt)
 
         # --- Pad Length ---
@@ -123,7 +127,8 @@ class EvalDataset(torch.utils.data.Dataset):
             self.pitch_intervals = np.load(os.path.join(data_path, dataset1, 'pitch_intervals', filename1+'_pi.npy'))
             self.onoffset_intervals = np.load(os.path.join(data_path, dataset1, 'onoffset_intervals', filename1+'_oi.npy'))
             self.onset_intervals = self.onoffset_intervals[:,0]
-        self.pitch = self.pitch[:,1]
+        if not use_ground_truth:
+            self.pitch = self.pitch[:,1]
 
         # --- Pad Length ---
         self.feature = torch.cat([

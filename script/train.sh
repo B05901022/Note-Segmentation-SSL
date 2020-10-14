@@ -2,7 +2,7 @@
 # === Solver ===
 model_type="PyramidNet_ShakeDrop"
 loss_type="VAT" #[None, VAT, VATo]
-dataset1="DALI_train" #Train Dataset, [TONAS, DALI_train, DALI_orig_train]
+dataset1="TONAS" #Train Dataset, [TONAS, DALI_train, DALI_orig_train]
 dataset2="DALI_orig_train" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI_train, DALI_orig_train]
 dataset3="MIR_1K_Instrumental" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
 dataset4="None" #Validation Dataset, [DALI_valid, DALI_orig_valid]

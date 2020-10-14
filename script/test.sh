@@ -1,12 +1,12 @@
 # --- Args ---
 # === Solver ===
 model_type="PyramidNet_ShakeDrop"
-loss_type="None" #[None, VAT, VATo]
-dataset1="DALI_train" #Train Dataset, [TONAS, DALI_train]
-dataset2="None" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI_train]
-dataset3="None" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
-dataset4="None" #Validation Dataset, [DALI_valid]
-dataset5="DALI_test" #Test Dataset, [DALI_test, ISMIR2014]
+loss_type="VAT" #[None, VAT, VATo]
+dataset1="DALI_train" #Train Dataset, [TONAS, DALI_train, DALI_orig_train]
+dataset2="DALI_orig_train" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI_train, DALI_orig_train]
+dataset3="MIR_1K_Instrumental" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
+dataset4="None" #Validation Dataset, [DALI_valid, DALI_orig_valid]
+dataset5="DALI_orig_test" #Test Dataset, [DALI_test, DALI_orig_test, ISMIR2014]
 mix_ratio=0.5
 meta_path="./meta/"
 data_path="../data/" #"/media/austinhsu/AA0A7F590A7F220D/Ubuntu_Backup/MIR_data/"
@@ -20,7 +20,7 @@ k=9
 batch_size=64
 num_workers=1
 # === Trainer ===
-exp_name="Training_20"
+exp_name="Training_21"
 log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"
@@ -69,7 +69,6 @@ python -u main.py \
 	--entity $entity \
 	--checkpoint_name $checkpoint_name \
 	--amp_level $amp_level \
-	--lt_off_smooth \
 	--shuffle \
 	--pin_memory \
 	--use_cp \

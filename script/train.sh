@@ -7,7 +7,7 @@ dataset2="DALI_orig_train" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic,
 dataset3="MIR_1K_Instrumental" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
 dataset4="None" #Validation Dataset, [DALI_valid, DALI_orig_valid]
 dataset5="DALI_orig_test" #Test Dataset, [DALI_test, DALI_orig_test, ISMIR2014]
-mix_ratio=0.5
+mix_ratio=0.1
 meta_path="./meta/"
 data_path="../data/" #"/media/austinhsu/AA0A7F590A7F220D/Ubuntu_Backup/MIR_data/"
 lr=0.0001
@@ -20,7 +20,7 @@ k=9
 batch_size=64
 num_workers=1
 # === Trainer ===
-exp_name="Training_21"
+exp_name="Training_22"
 log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"

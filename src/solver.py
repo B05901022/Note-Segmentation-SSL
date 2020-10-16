@@ -106,6 +106,11 @@ class OnOffsetSolver:
             self.dataset4 = []
         if self.hparams.dataset5 == "None":
             self.dataset5 = []
+        print(f"Training dataset: {self.dataset1}")
+        print(f"Semi-supervised dataset: {self.dataset2}")
+        print(f"Instrumental dataset: {self.dataset3}")
+        print(f"Validation dataset: {self.dataset4}")
+        print(f"Testing dataset: {self.dataset5}")
         self.__metaloader()
         
     def __metaloader(self):

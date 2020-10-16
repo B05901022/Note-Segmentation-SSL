@@ -111,6 +111,7 @@ class OnOffsetSolver:
         print(f"Instrumental dataset: {self.dataset3}")
         print(f"Validation dataset: {self.dataset4}")
         print(f"Testing dataset: {self.dataset5}")
+        print()
         self.__metaloader()
         
     def __metaloader(self):
@@ -212,7 +213,7 @@ class OnOffsetSolver:
         # --- semi-supervised loss ---
         en_loss = 0
         smsup_loss = 0
-        if self.dataset2 is not []:
+        if self.dataset2 != []:
             if 'EntMin' in self.hparams.loss_type:
                 # === Entropy Minimization ===
                 sdt_u = sdt_hat[sup_len:]      
@@ -232,7 +233,7 @@ class OnOffsetSolver:
             'train_loss': loss.item(), 
             'supervised_loss': super_loss.item(),
         }
-        if self.dataset2 is not []:
+        if self.dataset2 != []:
             tqdm_dict['semi-supervised_loss'] = (smsup_loss + en_loss).item()
         output = OrderedDict({
                 'loss': loss,
@@ -373,7 +374,7 @@ class OnOffsetSolver:
             # --- Supervised Dataset ---
             supervised_song_name, train_dataset_name = self.song_dict['supervised'].popleft()
             self.song_dict['supervised'].extend([(supervised_song_name, train_dataset_name)])      
-            if self.dataset3 is not []:
+            if self.dataset3 != []:
                 instrumental_song_name, inst_dataset_name = self.song_dict['instrumental'].popleft()
                 self.song_dict['instrumental'].extend([(instrumental_song_name, inst_dataset_name)])
             else:
@@ -387,7 +388,7 @@ class OnOffsetSolver:
                 num_feat=self.hparams.num_feat, k=self.hparams.k
                 )
             
-            if self.dataset2 is not []:
+            if self.dataset2 != []:
                 semi_supervised_song_name, semi_dataset_name = self.song_dict['semi_supervised'].popleft()
                 self.song_dict['semi_supervised'].extend([(semi_supervised_song_name, semi_dataset_name)])
                 semi_supervised_song_dataset = TrainDataset(

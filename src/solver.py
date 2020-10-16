@@ -128,7 +128,7 @@ class OnOffsetSolver:
         self.semi_supervised_datalist = []
         for semi_dataset in self.dataset2:
             if semi_dataset in self.available_semi_dataset:
-                self.semi_supervised_datalist += [(i, semi_dataset) for i in open(os.path.join(self.hparams.meta_path, self.meta_dict[train_dataset]), "r").read().split('\n')]
+                self.semi_supervised_datalist += [(i, semi_dataset) for i in open(os.path.join(self.hparams.meta_path, self.meta_dict[semi_dataset]), "r").read().split('\n')]
             else:
                 raise NotImplementedError(f"Given dataset2 name {semi_dataset} is not available, please try from {self.available_semi_dataset}.")
         

@@ -2,12 +2,12 @@
 # === Solver ===
 model_type="PyramidNet_ShakeDrop"
 loss_type="VAT" #[None, VAT, VATo]
-dataset1="TONAS" #Train Dataset, [TONAS, DALI_train, DALI_orig_train]
-dataset2="DALI_orig_train" #Semi-Supervised Dataset, [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI_train, DALI_orig_train]
-dataset3="MIR_1K_Instrumental" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
-dataset4="None" #Validation Dataset, [DALI_valid, DALI_orig_valid]
-dataset5="DALI_orig_test" #Test Dataset, [DALI_test, DALI_orig_test, ISMIR2014]
-mix_ratio=0.1
+dataset1="TONAS" #Train Dataset, ["TONAS", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "CMedia", "CMedia_demucs"]
+dataset2="MIR_1K|MedleyDB" #Semi-Supervised Dataset, ["MIR_1K", "MIR_1K_Polyphonic", "Pop_Rhythm", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "MedleyDB", "CMedia", "CMedia_demucs"]
+dataset3="None" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
+dataset4="None" #Validation Dataset, ["DALI_valid", "DALI_orig_valid", "DALI_demucs_valid"]
+dataset5="ISMIR2014" #Test Dataset, ["DALI_test", "DALI_orig_test", "DALI_demucs_test", "ISMIR2014", "CMedia", "CMedia_demucs"]
+mix_ratio=0.5
 meta_path="./meta/"
 data_path="../data/" #"/media/austinhsu/AA0A7F590A7F220D/Ubuntu_Backup/MIR_data/"
 lr=0.0001
@@ -20,7 +20,7 @@ k=9
 batch_size=64
 num_workers=1
 # === Trainer ===
-exp_name="Training_22"
+exp_name="Training_23"
 log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"

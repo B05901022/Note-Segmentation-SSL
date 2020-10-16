@@ -43,6 +43,7 @@ class TrainDataset(torch.utils.data.Dataset):
                     mix_ratio=self.mix_ratio
                     )
             self.feature = cp.asnumpy(self.feature)
+            cp._default_memory_pool.free_all_blocks()
         else:
             self.feature = np_full_flow(
                 os.path.join(data_path, dataset1, 'wav', filename1+'.wav'), 
@@ -113,6 +114,7 @@ class EvalDataset(torch.utils.data.Dataset):
                 self.feature, self.pitch = cp_test_flow(os.path.join(data_path, dataset1, 'wav', filename1+'.wav'), use_ground_truth=use_ground_truth, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
             self.feature = cp.asnumpy(self.feature)
             self.pitch = cp.asnumpy(self.pitch)
+            cp._default_memory_pool.free_all_blocks()
         else:
             self.feature, self.pitch = np_test_flow(os.path.join(data_path, dataset1, 'wav', filename1+'.wav'), use_ground_ruth=use_ground_truth, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
         self.feature = torch.from_numpy(self.feature).float()

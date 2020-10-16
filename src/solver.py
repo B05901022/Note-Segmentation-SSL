@@ -55,91 +55,100 @@ class OnOffsetSolver:
         self.hparams.use_amp = False
         self.best_epoch = 0
         self.test_no_offset = False
+
+        self.check_cp_available = lambda x: True #("DALI" not in x) and ("MedleyDB" not in x) and ("CMedia" not in x)
         
         # --- Build Model/Loss ---
         self.__build_model(model_type=self.hparams.model_type)
         self.__build_loss()
         
+        # --- Meta Files ---
+        self.meta_dict = {
+            'TONAS': "tonas.txt",
+            'DALI_train': "dali_train.txt",
+            "DALI_valid": "dali_valid.txt",
+            "DALI_test": "dali_test.txt",
+            "DALI_orig_train": "dali_orig_train.txt",
+            "DALI_orig_valid": "dali_orig_valid.txt",
+            "DALI_orig_test": "dali_orig_test.txt",
+            "DALI_demucs_train": "dali_demucs_train.txt",
+            "DALI_demucs_valid": "dali_demucs_valid.txt",
+            "DALI_demucs_test": "dali_demucs_test.txt",
+            "CMedia": "cmedia.txt",
+            "CMedia_demucs": "cmedia_demucs.txt",
+            "MIR_1K": "mir1k.txt",
+            "MIR_1K_Polyphonic": "mir1k_polyphonic.txt",
+            "MIR_1K_Instrumental": "mir1k_instrumental.txt",
+            "Pop_Rhythm": "pop_rhythm.txt",
+            "Pop_Rhythm_Instrumental": "pop_rhythm_instrumental.txt",
+            "ISMIR2014": "ismir_2014.txt",
+            "MedleyDB": "medleydb.txt",
+        }
+
+        # --- Available Datasets ---
+        self.available_train_dataset = ["TONAS", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "CMedia", "CMedia_demucs"]
+        self.available_semi_dataset = ["MIR_1K", "MIR_1K_Polyphonic", "Pop_Rhythm", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "MedleyDB", "CMedia", "CMedia_demucs"]
+        self.available_inst_dataset = ["Pop_Rhythm_Instrumental", "MIR_1K_Instrumental"]
+        self.available_valid_dataset = ["DALI_valid", "DALI_orig_valid", "DALI_demucs_valid"]
+        self.available_test_dataset = ["DALI_test", "DALI_orig_test", "DALI_demucs_test", "ISMIR2014", "CMedia", "CMedia_demucs"]
+
         # --- Meta Data Loader ---
-        self.dataset1 = self.hparams.dataset1 # Supervised
-        self.dataset2 = self.hparams.dataset2 # Semi-supervised
-        self.dataset3 = self.hparams.dataset3 # Instrumental
-        self.dataset4 = self.hparams.dataset4 # Validation
-        self.dataset5 = self.hparams.dataset5 # Test
+        self.dataset1 = self.hparams.dataset1.split("|") # Supervised
+        self.dataset2 = self.hparams.dataset2.split("|") # Semi-supervised
+        self.dataset3 = self.hparams.dataset3.split("|") # Instrumental
+        self.dataset4 = self.hparams.dataset4.split("|") # Validation
+        self.dataset5 = self.hparams.dataset5.split("|") # Test
         if self.hparams.dataset2 == "None":
-            self.dataset2 = None
+            self.dataset2 = []
         if self.hparams.dataset3 == "None":
-            self.dataset3 = None
+            self.dataset3 = []
         if self.hparams.dataset4 == "None":
-            self.dataset4 = None
+            self.dataset4 = []
         if self.hparams.dataset5 == "None":
-            self.dataset5 = None
+            self.dataset5 = []
         self.__metaloader()
         
     def __metaloader(self):
         """Loads meta data"""
         # === TRAIN DATASET ===
-        if self.dataset1 == "TONAS":
-            self.supervised_datalist = open(os.path.join(self.hparams.meta_path, "tonas.txt"), "r").read().split('\n')
-        elif self.dataset1 == "DALI_train":
-            self.supervised_datalist = open(os.path.join(self.hparams.meta_path, "dali_train.txt"), "r").read().split('\n')
-        elif self.dataset1 == "DALI_orig_train":
-            self.supervised_datalist = open(os.path.join(self.hparams.meta_path, "dali_orig_train.txt"), "r").read().split('\n')
-        else:
-            raise NotImplementedError("Given dataset1 name %s is not available, please try from [TONAS, DALI_train, DALI_orig_train]."%self.dataset1)      
+        self.supervised_datalist = []
+        for train_dataset in self.dataset1:
+            if train_dataset in self.available_train_dataset:
+                self.supervised_datalist += [(i, train_dataset) for i in open(os.path.join(self.hparams.meta_path, self.meta_dict[train_dataset]), "r").read().split('\n')]
+            else:
+                raise NotImplementedError(f"Given dataset1 name {train_dataset} is not available, please try from {self.available_train_dataset}.")      
         
         # === SEMI-SUPERVISED DATASET ===
-        if self.dataset2 is not None:
-            if self.dataset2 == "MIR_1K":
-                self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "mir1k.txt"), "r").read().split('\n')
-            elif self.dataset2 == "MIR_1K_Polyphonic":
-                self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "mir1k_polyphonic.txt"), "r").read().split('\n')
-            elif self.dataset2 == "Pop_Rhythm":
-                self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "pop_rhythm.txt"), "r").read().split('\n')
-            elif self.dataset2 == "DALI_train":
-                self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "dali_train.txt"), "r").read().split('\n') # + \
-                                                # open(os.path.join(self.hparams.meta_path, "dali_valid.txt"), "r").read().split('\n')
-            elif self.dataset2 == 'DALI_orig_train':
-                self.semi_supervised_datalist = open(os.path.join(self.hparams.meta_path, "dali_orig_train.txt"), "r").read().split('\n')
+        self.semi_supervised_datalist = []
+        for semi_dataset in self.dataset2:
+            if semi_dataset in self.available_semi_dataset:
+                self.semi_supervised_datalist += [(i, semi_dataset) for i in open(os.path.join(self.hparams.meta_path, self.meta_dict[train_dataset]), "r").read().split('\n')]
             else:
-                raise NotImplementedError("Given dataset2 name %s is not available, please try from [MIR_1K, MIR_1K_Polyphonic, Pop_Rhythm, DALI_train, DALI_orig_train]."%self.dataset2)
-        else:
-            self.semi_supervised_datalist = []
+                raise NotImplementedError(f"Given dataset2 name {semi_dataset} is not available, please try from {self.available_semi_dataset}.")
         
         # === INSTRUMENTAL DATASET ===
-        if self.dataset3 is not None:
-            if self.dataset3 == "Pop_Rhythm_Instrumental":
-                self.instrumental_datalist = open(os.path.join(self.hparams.meta_path, "pop_rhythm_instrumental.txt"), "r").read().split('\n')
-            elif self.dataset3 == "MIR_1K_Instrumental":
-                self.instrumental_datalist = open(os.path.join(self.hparams.meta_path, "mir1k_instrumental.txt"), "r").read().split('\n')
+        self.instrumental_datalist = []
+        for inst_dataset in self.dataset3:
+            if inst_dataset in self.available_inst_dataset:
+                self.instrumental_datalist += [(i, inst_dataset) for i in open(os.path.join(self.hparams.meta_path, self.meta_dict[inst_dataset]), "r").read().split('\n')]
             else:
-                raise NotImplementedError("Given dataset3 name %s is not available, please try from [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]."%self.dataset3)
-        else:
-            self.instrumental_datalist = [] 
+                raise NotImplementedError(f"Given dataset3 name {inst_dataset} is not available, please try from {self.available_inst_dataset}.")
         
         # === VALID DATASET ===
-        if self.dataset4 is not None:
-            if self.dataset4 == "DALI_valid":
-                self.valid_datalist = open(os.path.join(self.hparams.meta_path, "dali_valid.txt"), "r").read().split('\n')
-            elif self.dataset4 == "DALI_orig_valid":
-                self.valid_datalist = open(os.path.join(self.hparams.meta_path, "dali_orig_valid.txt"), "r").read().split('\n')
+        self.valid_datalist = []
+        for valid_dataset in self.dataset4:
+            if valid_dataset in self.available_valid_dataset:
+                self.valid_datalist += [(i, valid_dataset) for i in open(os.path.join(self.hparams.meta_path, self.meta_dict[valid_dataset]), "r").read().split('\n')]
             else:
-                raise NotImplementedError("Given dataset4 name %s is not available, please try from [DALI_valid, DALI_orig_valid]."%self.dataset4)
-        else:
-            self.valid_datalist = []
+                raise NotImplementedError(f"Given dataset4 name {valid_dataset} is not available, please try from {self.available_valid_dataset}.")
         
         # === TEST DATASET ===
-        if self.dataset5 is not None:
-            if self.dataset5 == "DALI_test":
-                self.test_datalist = open(os.path.join(self.hparams.meta_path, "dali_test.txt"), "r").read().split('\n')
-            elif self.dataset5 == "DALI_orig_test":
-                self.test_datalist = open(os.path.join(self.hparams.meta_path, "dali_orig_test.txt"), "r").read().split('\n')
-            elif self.dataset5 == "ISMIR2014":
-                self.test_datalist = open(os.path.join(self.hparams.meta_path, "ismir_2014.txt"), "r").read().split('\n')
+        self.test_datalist = []
+        for test_dataset in self.dataset5:
+            if test_dataset in self.available_test_dataset:
+                self.test_datalist += [(i, test_dataset) for i in open(os.path.join(self.hparams.meta_path, self.meta_dict[test_dataset]), "r").read().split('\n')]
             else:
-                raise NotImplementedError("Given dataset5 name %s is not available, please try from [DALI_test, DALI_orig_test, ISMIR2014]."%self.dataset5)
-        else:
-            self.test_datalist = []
+                raise NotImplementedError(f"Given dataset5 name {test_dataset} is not available, please try from {self.available_test_dataset}.")
     
     def __build_model(self, model_type):
         if model_type == "Resnet_18":
@@ -171,7 +180,7 @@ class OnOffsetSolver:
         """
         
         # --- data collection ---
-        if self.dataset2 is None:
+        if self.dataset2 is []:
             supervised_data = batch
             sup_len = supervised_data[0].size(0)
             feat, sdt = supervised_data
@@ -198,7 +207,7 @@ class OnOffsetSolver:
         # --- semi-supervised loss ---
         en_loss = 0
         smsup_loss = 0
-        if self.dataset2 is not None:
+        if self.dataset2 is not []:
             if 'EntMin' in self.hparams.loss_type:
                 # === Entropy Minimization ===
                 sdt_u = sdt_hat[sup_len:]      
@@ -218,7 +227,7 @@ class OnOffsetSolver:
             'train_loss': loss.item(), 
             'supervised_loss': super_loss.item(),
         }
-        if self.dataset2 is not None:
+        if self.dataset2 is not []:
             tqdm_dict['semi-supervised_loss'] = (smsup_loss + en_loss).item()
         output = OrderedDict({
                 'loss': loss,
@@ -357,32 +366,33 @@ class OnOffsetSolver:
         
         if mode == "train":
             # --- Supervised Dataset ---
-            supervised_song_name = self.song_dict['supervised'].popleft()
-            self.song_dict['supervised'].extend([supervised_song_name])      
-            if self.dataset3 is not None:
-                instrumental_song_name = self.song_dict['instrumental'].popleft()
-                self.song_dict['instrumental'].extend([instrumental_song_name])
+            supervised_song_name, train_dataset_name = self.song_dict['supervised'].popleft()
+            self.song_dict['supervised'].extend([(supervised_song_name, train_dataset_name)])      
+            if self.dataset3 is not []:
+                instrumental_song_name, inst_dataset_name = self.song_dict['instrumental'].popleft()
+                self.song_dict['instrumental'].extend([(instrumental_song_name, inst_dataset_name)])
             else:
                 instrumental_song_name = None
+                inst_dataset_name = None
             supervised_song_dataset = TrainDataset(
-                data_path=self.hparams.data_path, dataset1=self.dataset1, dataset2=self.dataset3,
+                data_path=self.hparams.data_path, dataset1=train_dataset_name, dataset2=inst_dataset_name,
                 filename1=supervised_song_name, filename2=instrumental_song_name, mix_ratio=self.hparams.mix_ratio,
                 longtail_args={'on_smooth': self.hparams.lt_on_smooth, 'off_smooth': self.hparams.lt_off_smooth},
-                device=self.device, use_cp=(self.dataset1!='DALI') and self.hparams.use_cp, semi=False,
+                device=self.device, use_cp=self.check_cp_available(train_dataset_name) and self.hparams.use_cp, semi=False,
                 num_feat=self.hparams.num_feat, k=self.hparams.k
                 )
             
-            if self.dataset2 is not None:
-                semi_supervised_song_name = self.song_dict['semi_supervised'].popleft()
-                self.song_dict['semi_supervised'].extend([semi_supervised_song_name])
+            if self.dataset2 is not []:
+                semi_supervised_song_name, semi_dataset_name = self.song_dict['semi_supervised'].popleft()
+                self.song_dict['semi_supervised'].extend([(semi_supervised_song_name, semi_dataset_name)])
                 semi_supervised_song_dataset = TrainDataset(
-                    data_path=self.hparams.data_path, dataset1=self.dataset2, dataset2=None, 
+                    data_path=self.hparams.data_path, dataset1=semi_dataset_name, dataset2=None, 
                     filename1=semi_supervised_song_name, filename2=None, mix_ratio=self.hparams.mix_ratio,
                     device=self.device, use_cp=self.hparams.use_cp, semi=True,
                     num_feat=self.hparams.num_feat, k=self.hparams.k
                     )
             
-            if self.dataset2 is None:
+            if self.dataset2 is []:
                 self.training_dataset = supervised_song_dataset
             else:
                 self.training_dataset = ConcatDataset(supervised_song_dataset, semi_supervised_song_dataset)
@@ -391,11 +401,11 @@ class OnOffsetSolver:
                                                num_workers=self.hparams.num_workers, pin_memory=self.hparams.pin_memory)
             
         elif mode == "valid":
-            valid_song_name = self.song_dict['valid'].popleft()
-            self.song_dict['valid'].extend([valid_song_name])
+            valid_song_name, valid_dataset_name = self.song_dict['valid'].popleft()
+            self.song_dict['valid'].extend([(valid_song_name, valid_dataset_name)])
             self.validation_dataset = EvalDataset(
-                data_path=self.hparams.data_path, dataset1=self.dataset4, filename1=valid_song_name,
-                device=self.device, use_cp=(self.dataset4!='DALI') and self.hparams.use_cp, no_pitch=True, use_ground_truth=False,
+                data_path=self.hparams.data_path, dataset1=valid_dataset_name, filename1=valid_song_name,
+                device=self.device, use_cp=self.check_cp_available(valid_dataset_name) and self.hparams.use_cp, no_pitch=True, use_ground_truth=False,
                 num_feat=self.hparams.num_feat, k=self.hparams.k,
                 batch_size=self.hparams.batch_size, num_workers=self.hparams.num_workers, pin_memory=self.hparams.pin_memory
                 )
@@ -403,11 +413,11 @@ class OnOffsetSolver:
                                                num_workers=self.hparams.num_workers, pin_memory=self.hparams.pin_memory)
     
         elif mode == "test":
-            test_song_name = self.song_dict['test'].popleft()
-            self.song_dict['test'].extend([test_song_name])
+            test_song_name, test_dataset_name = self.song_dict['test'].popleft()
+            self.song_dict['test'].extend([(test_song_name, test_dataset_name)])
             self.testing_dataset = EvalDataset(
-                data_path=self.hparams.data_path, dataset1=self.dataset5, filename1=test_song_name,
-                device=self.device, use_cp=(self.dataset5!='DALI') and self.hparams.use_cp, no_pitch=False, use_ground_truth=self.hparams.use_ground_truth,
+                data_path=self.hparams.data_path, dataset1=test_dataset_name, filename1=test_song_name,
+                device=self.device, use_cp=self.check_cp_available(test_dataset_name) and self.hparams.use_cp, no_pitch=False, use_ground_truth=self.hparams.use_ground_truth,
                 num_feat=self.hparams.num_feat, k=self.hparams.k,
                 batch_size=self.hparams.batch_size, num_workers=self.hparams.num_workers, pin_memory=self.hparams.pin_memory
                 )

@@ -156,3 +156,30 @@ def pitch2freq(pitch_np):
 def freq2pitch(freq_np):
     pitch_np = 69+12*np.log2(freq_np/440)
     return pitch_np
+
+def minimumEditDistance(s1,s2):
+    if len(s1) > len(s2):
+        s1,s2 = s2,s1
+    distances = range(len(s1) + 1)
+    for index2,char2 in enumerate(s2):
+        newDistances = [index2+1]
+        for index1,char1 in enumerate(s1):
+            if abs(char1 - char2)<0.5:
+                newDistances.append(distances[index1])
+            else:
+                newDistances.append(1 + min((distances[index1],
+                                             distances[index1+1],
+                                             newDistances[-1])))
+        distances = newDistances
+    return distances[-1]
+
+def to_semitone(freq):
+    return 12*np.log2(freq/440)+69
+
+def eval_note_acc(gt, est):
+    gt = to_semitone(gt)
+    est = to_semitone(est)
+    dist = minimumEditDistance(gt,est)
+    note_error_rate = float(dist) / len(est)
+    note_accuracy = 1 - note_error_rate
+    return note_accuracy

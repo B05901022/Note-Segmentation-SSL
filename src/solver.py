@@ -9,7 +9,7 @@ from src.dataset import TrainDataset, EvalDataset
 from src.utils.warmup_scheduler import WarmupLR
 from src.utils.concat_dataset import ConcatDataset
 from src.utils.loss import EntropyLoss, VATLoss, VATLoss_onset
-from src.utils.evaluate_tools import Smooth_sdt6_modified, Naive_pitch #, freq2pitch
+from src.utils.evaluate_tools import Smooth_sdt6_modified, Naive_pitch, eval_note_acc #, freq2pitch
 from src.model.PyramidNet_ShakeDrop import PyramidNet_ShakeDrop
 from src.model.ResNet18 import ResNet18
 from src.utils.audio_augment import transform_method
@@ -301,29 +301,50 @@ class OnOffsetSolver:
         
         # --- evaluation ---
         pitch_intervals, sSeq_np, dSeq_np, onSeq_np, offSeq_np, conflict_ratio = Smooth_sdt6_modified(predict_on_notes_np, threshold=0.5) # list of onset secs, ndarray
-        F_on, P_on, R_on = mir_eval.onset.f_measure(onset_ans_np, pitch_intervals[:,0], window=0.05)
-        offset_ratio = None if self.test_no_offset else 0.2
-        #try:
         freq_est = Naive_pitch(p_np, pitch_intervals)
-
-        (P, R, F1) = mir_eval.transcription.offset_precision_recall_f1(ans_np, pitch_intervals, offset_ratio=0.2, offset_min_tolerance=0.05)
-        P_p, R_p, F_p, AOR = mir_eval.transcription.precision_recall_f1_overlap(ans_np, freq_ans, pitch_intervals, freq_est, pitch_tolerance=50.0, offset_ratio=offset_ratio)
-            #P_p, R_p, F_p, AOR = mir_eval.transcription.precision_recall_f1_overlap(ans_np, freq_ans, pitch_intervals, freq_est, pitch_tolerance=50.0)    
-        #except:
-        #    P, R, F1, P_p, R_p, F_p, AOR = 0,0,0,0,0,0,0
         
+        # === ONSET === 
+        F_on, P_on, R_on = mir_eval.onset.f_measure(onset_ans_np, pitch_intervals[:,0], window=0.05)
+        
+        # === OFFSET ===
+        (P, R, F1) = mir_eval.transcription.offset_precision_recall_f1(ans_np, pitch_intervals, offset_ratio=0.2, offset_min_tolerance=0.05)
+        
+        # === TRANSCRIPTION ===
+        # offset_ratio = None if self.test_no_offset else 0.2
+        # P_p, R_p, F_p, AOR = mir_eval.transcription.precision_recall_f1_overlap(ans_np, freq_ans, pitch_intervals, freq_est, pitch_tolerance=50.0, offset_ratio=offset_ratio)
+        P_p, R_p, F_p, AOR = mir_eval.transcription.precision_recall_f1_overlap(ans_np, freq_ans, pitch_intervals, freq_est, pitch_tolerance=50.0, offset_ratio=0.2)
+        P_p_nf, R_p_nf, F_p_nf, AOR_nf = mir_eval.transcription.precision_recall_f1_overlap(ans_np, freq_ans, pitch_intervals, freq_est, pitch_tolerance=50.0, offset_ratio=None)
+        P_p_2o, R_p_2o, F_p_2o, AOR_2o = mir_eval.transcription.precision_recall_f1_overlap(ans_np, freq_ans, pitch_intervals, freq_est, onset_tolerance=0.1, pitch_tolerance=50.0, offset_ratio=0.2)
+        P_p_nf_2o, R_p_nf_2o, F_p_nf_2o, AOR_nf_2o = mir_eval.transcription.precision_recall_f1_overlap(ans_np, freq_ans, pitch_intervals, freq_est, onset_tolerance=0.1, pitch_tolerance=50.0, offset_ratio=None)
+        
+        # === NOTE ACCURACY RATE ===
+        note_acc = eval_note_acc(freq_ans, freq_est)
+
         tqdm_dict = {
             'Onset_F1': F_on,
             'Offset_F1': F1,
             'Transcription_F1': F_p,
+            'Transcription_F1(No_Offset)': F_p_nf,
+            'Transcription_F1(Onset_100ms)': F_p_2o,
+            'Transcription_F1(No_Offset, Onset_100ms)': F_p_nf_2o,
             'Onset_Precision': P_on,
             'Offset_Precision': P,
             'Transcription_Precision': P_p,
+            'Transcription_Precision(No_Offset)': P_p_nf,
+            'Transcription_Precision(Onset_100ms)': P_p_2o,
+            'Transcription_Precision(No_Offset, Onset_100ms)': P_p_nf_2o,
             'Onset_Recall': R_on,
             'Offset_Recall': R,
             'Transcription_Recall': R_p,
+            'Transcription_Recall(No_Offset)': R_p_nf,
+            'Transcription_Recall(Onset_100ms)': R_p_2o,
+            'Transcription_Precision(No_Offset, Onset_100ms)': R_p_nf_2o,
             'Average_Overlap_Ratio': AOR,
+            'Average_Overlap_Ratio(No_Offset)': AOR_nf,
+            'Average_Overlap_Ratio(Onset_100ms)': AOR_2o,
+            'Average_Overlap_Ratio(No_Offset, Onset_100ms)': AOR_nf_2o,
             'Conflict_Ratio': conflict_ratio,
+            'Note_Accuracy': note_acc,
         }
         
         output = OrderedDict({

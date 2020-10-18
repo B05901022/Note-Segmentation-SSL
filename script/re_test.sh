@@ -1,12 +1,17 @@
 # --- Args ---
+TEST_DATASET=$1
+EXP_NAME=$2
+CKPT_FOLDER=$3
+CKPT_NAME=$4
+
 # === Solver ===
 model_type="PyramidNet_ShakeDrop"
-loss_type="VAT" #[None, VAT, VATo]
-dataset1="TONAS" #Train Dataset, ["TONAS", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "CMedia", "CMedia_demucs"]
-dataset2="MedleyDB" #Semi-Supervised Dataset, ["MIR_1K", "MIR_1K_Polyphonic", "Pop_Rhythm", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "MedleyDB", "CMedia", "CMedia_demucs"]
+loss_type="None" #[None, VAT, VATo]
+dataset1="None" #Train Dataset, ["TONAS", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "CMedia", "CMedia_demucs"]
+dataset2="None" #Semi-Supervised Dataset, ["MIR_1K", "MIR_1K_Polyphonic", "Pop_Rhythm", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "MedleyDB", "CMedia", "CMedia_demucs"]
 dataset3="None" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
 dataset4="None" #Validation Dataset, ["DALI_valid", "DALI_orig_valid", "DALI_demucs_valid"]
-dataset5="ISMIR2014" #Test Dataset, ["DALI_test", "DALI_orig_test", "DALI_demucs_test", "ISMIR2014", "CMedia", "CMedia_demucs"]
+dataset5=${TEST_DATASET} #Test Dataset, ["DALI_test", "DALI_orig_test", "DALI_demucs_test", "ISMIR2014", "CMedia", "CMedia_demucs"]
 mix_ratio=0.5
 meta_path="./meta/"
 data_path="../data/" #"/media/austinhsu/AA0A7F590A7F220D/Ubuntu_Backup/MIR_data/"
@@ -20,12 +25,12 @@ k=9
 batch_size=64
 num_workers=1
 # === Trainer ===
-exp_name="Training_25"
+exp_name=${EXP_NAME}
 log_path="./log/"
-save_path="./checkpoints/"
+save_path=${CKPT_FOLDER}
 project="note_segmentation"
 entity="austinhsu"
-checkpoint_name="epoch=19.pt"
+checkpoint_name=${CKPT_NAME}
 amp_level="O1"
 accumulate_grad_batches=1
 
@@ -57,10 +62,6 @@ python -u main.py \
 	--mix_ratio $mix_ratio \
 	--meta_path $meta_path \
 	--data_path $data_path \
-	--lr $lr \
-	--lr_warmup $lr_warmup \
-	--max_steps $max_steps \
-	--max_epoch $max_epoch \
 	--se $se \
 	--num_feat $num_feat \
 	--k $k \
@@ -73,10 +74,8 @@ python -u main.py \
 	--entity $entity \
 	--checkpoint_name $checkpoint_name \
 	--amp_level $amp_level \
-	--accumulate_grad_batches $accumulate_grad_batches \
 	--shuffle \
 	--pin_memory \
 	--use_cp \
-	--skip_val \
 	--use_gpu \
-	--train
+	--test

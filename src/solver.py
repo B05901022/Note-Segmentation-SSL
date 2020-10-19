@@ -56,7 +56,7 @@ class OnOffsetSolver:
         self.best_epoch = 0
         self.test_no_offset = False
 
-        self.check_cp_available = lambda x: True #("DALI" not in x) and ("MedleyDB" not in x) and ("CMedia" not in x)
+        self.check_cp_available = lambda x: True # x!="MedleyDB"
         
         # --- Build Model/Loss ---
         self.__build_model(model_type=self.hparams.model_type)
@@ -83,11 +83,12 @@ class OnOffsetSolver:
             "Pop_Rhythm_Instrumental": "pop_rhythm_instrumental.txt",
             "ISMIR2014": "ismir_2014.txt",
             "MedleyDB": "medleydb.txt",
+            "MedleyDB_semgent": "medleydb_segment.txt",
         }
 
         # --- Available Datasets ---
         self.available_train_dataset = ["TONAS", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "CMedia", "CMedia_demucs"]
-        self.available_semi_dataset = ["MIR_1K", "MIR_1K_Polyphonic", "Pop_Rhythm", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "MedleyDB", "CMedia", "CMedia_demucs"]
+        self.available_semi_dataset = ["MIR_1K", "MIR_1K_Polyphonic", "Pop_Rhythm", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "MedleyDB", "MedleyDB_semgent", "CMedia", "CMedia_demucs"]
         self.available_inst_dataset = ["Pop_Rhythm_Instrumental", "MIR_1K_Instrumental"]
         self.available_valid_dataset = ["DALI_valid", "DALI_orig_valid", "DALI_demucs_valid"]
         self.available_test_dataset = ["DALI_test", "DALI_orig_test", "DALI_demucs_test", "ISMIR2014", "CMedia", "CMedia_demucs"]

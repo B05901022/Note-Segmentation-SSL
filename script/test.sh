@@ -3,7 +3,7 @@
 model_type="PyramidNet_ShakeDrop"
 loss_type="VAT" #[None, VAT, VATo]
 dataset1="TONAS" #Train Dataset, ["TONAS", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "CMedia", "CMedia_demucs"]
-dataset2="MIR_1K|MedleyDB_segment" #Semi-Supervised Dataset, ["MIR_1K", "MIR_1K_Polyphonic", "Pop_Rhythm", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "MedleyDB", "MedleyDB_segment", "CMedia", "CMedia_demucs"]
+dataset2="MIR_1K|MedleyDB_segment|DALI_demucs_train_segment" #Semi-Supervised Dataset, ["MIR_1K", "MIR_1K_Polyphonic", "Pop_Rhythm", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "DALI_demucs_train_segment", "MedleyDB", "MedleyDB_segment", "CMedia", "CMedia_demucs"]
 dataset3="None" #Instrumental Dataset, [Pop_Rhythm_Instrumental, MIR_1K_Instrumental]
 dataset4="None" #Validation Dataset, ["DALI_valid", "DALI_orig_valid", "DALI_demucs_valid"]
 dataset5="ISMIR2014" #Test Dataset, ["DALI_test", "DALI_orig_test", "DALI_demucs_test", "ISMIR2014", "CMedia", "CMedia_demucs"]
@@ -20,7 +20,7 @@ k=9
 batch_size=64
 num_workers=1
 # === Trainer ===
-exp_name="Training_26"
+exp_name="Training_27"
 log_path="./log/"
 save_path="./checkpoints/"
 project="note_segmentation"

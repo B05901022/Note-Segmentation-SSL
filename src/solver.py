@@ -74,6 +74,7 @@ class OnOffsetSolver:
             "DALI_demucs_train": "dali_demucs_train.txt",
             "DALI_demucs_valid": "dali_demucs_valid.txt",
             "DALI_demucs_test": "dali_demucs_test.txt",
+            "DALI_demucs_train_segment": "dali_demucs_train_segment.txt"
             "CMedia": "cmedia.txt",
             "CMedia_demucs": "cmedia_demucs.txt",
             "MIR_1K": "mir1k.txt",
@@ -88,7 +89,7 @@ class OnOffsetSolver:
 
         # --- Available Datasets ---
         self.available_train_dataset = ["TONAS", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "CMedia", "CMedia_demucs"]
-        self.available_semi_dataset = ["MIR_1K", "MIR_1K_Polyphonic", "Pop_Rhythm", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "MedleyDB", "MedleyDB_segment", "CMedia", "CMedia_demucs"]
+        self.available_semi_dataset = ["MIR_1K", "MIR_1K_Polyphonic", "Pop_Rhythm", "DALI_train", "DALI_orig_train", "DALI_demucs_train", "DALI_demucs_train_segment", "MedleyDB", "MedleyDB_segment", "CMedia", "CMedia_demucs"]
         self.available_inst_dataset = ["Pop_Rhythm_Instrumental", "MIR_1K_Instrumental"]
         self.available_valid_dataset = ["DALI_valid", "DALI_orig_valid", "DALI_demucs_valid"]
         self.available_test_dataset = ["DALI_test", "DALI_orig_test", "DALI_demucs_test", "ISMIR2014", "CMedia", "CMedia_demucs"]

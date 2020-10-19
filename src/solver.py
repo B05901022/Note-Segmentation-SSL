@@ -74,7 +74,7 @@ class OnOffsetSolver:
             "DALI_demucs_train": "dali_demucs_train.txt",
             "DALI_demucs_valid": "dali_demucs_valid.txt",
             "DALI_demucs_test": "dali_demucs_test.txt",
-            "DALI_demucs_train_segment": "dali_demucs_train_segment.txt"
+            "DALI_demucs_train_segment": "dali_demucs_train_segment.txt",
             "CMedia": "cmedia.txt",
             "CMedia_demucs": "cmedia_demucs.txt",
             "MIR_1K": "mir1k.txt",

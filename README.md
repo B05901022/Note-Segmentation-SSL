@@ -1,6 +1,6 @@
 # Note-Segmentation-SSL
 
-Training code for our work [VOCANO: A note transcription framework for singing voice in polyphonic music][VOCANO: A note transcription framework for singing voice in polyphonic music]. For inference-only needs, please check the [VOCANO repository][VOCANO: A note transcription framework for singing voice in polyphonic music] or [Omnizart][Omnizart] which also includes other inferencing options including pitched instruments, vocal chords, drum events, and beat.
+Training code for our work [VOCANO: A note transcription framework for singing voice in polyphonic music][VOCANO: A note transcription framework for singing voice in polyphonic music]. For inference-only needs, please check the [VOCANO repository][VOCANO: A note transcription framework for singing voice in polyphonic music] or [Omnizart][Omnizart] which also includes other inference options including pitched instruments, vocal, chords, drum events, and beat.
 
 ## Requirements
 
@@ -35,11 +35,11 @@ The `sdt`, `pitch`, `pitch_intervals`, `onoffset_intervals` files can be downloa
 $ python file_prepare.py
 ```
 
-Due to copyright issues, we cannot provide the audio files we used in our training procedure. However, all the datasets used publicly available, including [TONAS][TONAS], [MIR-1K][MIR-1K], [Medley-DB][Medley-DB], and [DALI][DALI]. Please follow the scripts provided by the original repositories to manually download the datasets and place the .wav files under `../data/<dataset_name>/wav/` folder or manually change the data folder in training/inference scripts (see next section). Note that for DALI dataset, we only pick the ground truth data that are selected by the DALI paper, so it is not necessary to download the whole dataset. All the data picked/downloaded in our work are listed in the `./meta/` folder. **Some of the data that we used may already not valid on the internet (CMeda and DALI), so please ensure to delete the labels in the `./meta/` folder that are not downloadable to correctly run through the training/inference scripts.**
+Due to copyright issues, we cannot provide the audio files we used in our training procedure. However, all the datasets used publicly available, including [TONAS][TONAS], [MIR-1K][MIR-1K], [Medley-DB][Medley-DB], and [DALI][DALI]. Please follow the scripts provided by the original repositories to manually download the datasets and place the .wav files under `../data/<dataset_name>/wav/` folder or manually change the data folder in training/inference scripts (see next section). Note that for DALI dataset, we only pick the ground truth data that are selected by the DALI paper, so it is not necessary to download the whole dataset. All the data picked/downloaded in our work are listed in the `./meta/` folder. **Some of the data that we used may already not valid on the internet (CMedia and DALI), so please ensure to delete the labels in the `./meta/` folder that are not downloadable to correctly run through the training/inference scripts.**
 
 ### Vocal Seperation and Unlabeled Data Preprocessing (for speed up)
 
-To perform the vocal separation pipeline, please follow the instructions in [DEMUCS repo][DEMUCS repo] and put the generated `.wav` files in `./data/<dataset_name>_demucs/wav/` folder. Other vocal separation toolkit are also available, just to ensure that the files are named the same as original `.wav` files and placed under the same `./data/<dataset_name>_demucs/wav/` folder.
+To perform the vocal separation pipeline, please follow the instructions in [DEMUCS repo][DEMUCS repo] and put the generated `.wav` files in `./data/<dataset_name>_demucs/wav/` folder. Other vocal separation toolkits are also available, just to ensure that the files are named the same as original `.wav` files and placed under the same `./data/<dataset_name>_demucs/wav/` folder.
 
 To further speed up the unlabeled data loading speed for semi-supervised learning, it is also recommended to manually split the data into 8-second segments, and name the files into `<data_name>_<segment_number>.wav`.
 

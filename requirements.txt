@@ -10,7 +10,7 @@ matplotlib==3.4.1
 mido==1.2.9
 mir-eval==0.6
 numpy==1.19.2
-pillow==8.2.0
+pillow==9.0.0
 prettytable==2.1.0
 pretty-midi==0.2.9
 requests==2.24.0
